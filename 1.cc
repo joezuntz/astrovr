@@ -21,6 +21,8 @@
 #include "healpix_map.h"
 #include "healpix_map_fitsio.h"
 
+#include "color_map.hh"
+
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
@@ -156,17 +158,6 @@ void push_triangle(std::vector<GLfloat> &v, vec3 &p1, vec3 &p2, vec3 &p3, glm::v
 
 }
 
-static inline
-glm::vec4 map_range(float vmin, float vmax, float v){
-    // return glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    if (v<vmin) v=vmin;
-    if (v>vmax) v=vmax;
-    GLfloat r = (log(v)-log(vmin))/(log(vmax)-log(vmin));
-    GLfloat g = 0.1f;
-    GLfloat b = 0.1f;
-    return glm::vec4(r, g, b, 1.0f);
-    // return (v-vmin)/(vmax-vmin);
-}
 
 void ViewManager::setupHealpix(std::string &filename){
     // Transfer the vertex info to the GPU
@@ -182,11 +173,10 @@ void ViewManager::setupHealpix(std::string &filename){
     Healpix_Map<double> map(order, RING);
     map.Import(fullResMap, false);
 
-    double vmin=0.01;
-    double vmax=10.0;
-    double vrange = vmax-vmin;
+    float vmin=0.01;
+    float vmax=50.0;
 
-
+    JetColorMap jet(vmin, vmax, true);
     float scale = 0.25;
     for (int i=0; i<npix; i++){
         std::vector<vec3> vd;
@@ -194,7 +184,10 @@ void ViewManager::setupHealpix(std::string &filename){
         // std::cout << "X["  << i << "] = " << vd[1].x << ", " << vd[1].y << ", " << vd[1].z << std::endl;
         // We now have four points, the four coordinates of the pixel edge.
         // we need to draw two triangles, ABC and ACD
-        glm::vec4 v = map_range(vmin, vmax, map[i]);
+        GLfloat rgb[3];
+        jet(map[i], rgb);
+
+        glm::vec4 v(rgb[0], rgb[1], rgb[2], 1.0f);
         push_triangle(vertices, vd[0], vd[1], vd[2], v, scale);
         push_triangle(vertices, vd[0], vd[2], vd[3], v, scale);
     }
@@ -451,7 +444,7 @@ int main()
     glfwInit();
 
 
-    int nside = 64;
+    int nside = 128;
     ViewManager viewManager(nside);
     viewManager.setupWindow();
     std::cout << glGetString(GL_VERSION) << std::endl;
