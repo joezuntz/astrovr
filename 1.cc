@@ -274,6 +274,7 @@ void ViewManager::setupWindow(){
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);    
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);    
 
 
     // Create a GLFWwindow object that we can use for GLFW's functions
@@ -392,23 +393,8 @@ void ViewManager::drawHealpix(){
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(viewAngle), ((GLfloat)WIDTH) / HEIGHT, 0.1f, 2.0f);
 
-    // Save these matrices
-    sendMatrix("model", model);
-    sendMatrix("view", view);
+    projection = projection*view*model;
     sendMatrix("projection", projection);
-
-
-    //Choose the color scheme
-    glm::vec4 blue(0.0f, 0.0f, 1.0f, 1.0f);
-    glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
-
-    GLuint colorMinLoc = glGetUniformLocation(shaderProgram, "color_min");
-    glUniform4fv(colorMinLoc, 1, glm::value_ptr(blue));
-    checkGLerror("Color Max");
-
-    GLuint colorMaxLoc = glGetUniformLocation(shaderProgram, "color_max");
-    glUniform4fv(colorMaxLoc, 1, glm::value_ptr(red));
-    checkGLerror("Color Min");
 
     glDrawArrays(GL_TRIANGLES, 0, vertices.size()/3);
     checkGLerror("Draw");
