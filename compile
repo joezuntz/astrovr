@@ -11,8 +11,9 @@ LDFLAGS="${CXXFLAGS} ${GL_FLAGS} ${HEALPIX_LINK} -lglew -lglfw3"
 
 g++ -c avr_object.cc ${CXXFLAGS} ${GL_FLAGS}
 g++ -c avr_healpix.cc  ${CXXFLAGS} ${GL_FLAGS} ${HEALPIX_INCLUDE}
+g++ -c avr_catalog.cc  ${CXXFLAGS} ${GL_FLAGS} ${HEALPIX_INCLUDE}
 g++ -c avr_viewer.cc  ${CXXFLAGS} ${GL_FLAGS} ${HEALPIX_INCLUDE}
 g++ -c main.cc  ${CXXFLAGS} ${GL_FLAGS} ${HEALPIX_INCLUDE}
 g++ -c color_map.cc  ${CXXFLAGS}
 
-g++ -o main main.o color_map.o avr_viewer.o avr_healpix.o avr_object.o ${GL_FLAGS} ${LDFLAGS}
+g++ -o main main.o color_map.o avr_viewer.o avr_healpix.o avr_catalog.o avr_object.o ${GL_FLAGS} ${LDFLAGS}
