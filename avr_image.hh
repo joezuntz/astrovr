@@ -18,7 +18,7 @@ public:
     void setupImage(const char * filename);
     GLuint texture;
     
-	void enlargeTexturePower2(std::vector<GLfloat> &pixels, 
+	void enlargeTextureRBGPower2(std::vector<GLfloat> &pixels, 
     std::vector<GLfloat> &embed_image,
     int original_width, int original_height,
     int desired_width, int desired_height

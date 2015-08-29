@@ -28,8 +28,8 @@ AVRImage::AVRImage(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	// float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 	// glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     checkGLerror("setting min/mag");
 
 }
@@ -76,7 +76,7 @@ void AVRImage::loadFits(const char * filename, std::vector<float> &pixel_data, l
 
 }
 
-void AVRImage::enlargeTexturePower2(std::vector<GLfloat> &pixels, 
+void AVRImage::enlargeTextureRBGPower2(std::vector<GLfloat> &pixels, 
     std::vector<GLfloat> &embed_image,
     int original_width, int original_height,
     int desired_width, int desired_height
@@ -90,7 +90,6 @@ void AVRImage::enlargeTexturePower2(std::vector<GLfloat> &pixels,
 
     for (int i=0; i<original_width; i++){
         for (int j=0; j<original_height; j++){
-            std::cout << i << "  " << j << pixels[i*original_height+j] << std::endl;
             embed_image[(i*desired_height+j)*3+0] = pixels[i*original_height+j]/vmax;
             embed_image[(i*desired_height+j)*3+1] = pixels[i*original_height+j]/vmax;
             embed_image[(i*desired_height+j)*3+2] = pixels[i*original_height+j]/vmax;
@@ -102,100 +101,47 @@ void AVRImage::enlargeTexturePower2(std::vector<GLfloat> &pixels,
 void AVRImage::setupImage(const char * filename)
 {
 
-    /*
 
-    std::vector<float> pixel_data;
-    loadFits(filename, pixel_data);
-
-    int nlarge = 128;
-
-    std::vector<float> embed_image(nlarge*nlarge);
-    for (int i=0; i<width; i++){
-	    for (int j=0; j<height; j++){
-	    	// std::cout << i << "  " << j << std::endl;
-	    	embed_image[i*nlarge+j] = pixel_data[i*height+j];
-	    }
-    }
-    pixel_data.clear();
-
-
-
-
-
-
-
-    // Now need to convert pixel data into a texture
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 128,  128, 0, GL_RED, GL_FLOAT, 
-        embed_image.data());
-    checkGLerror("Filling texture");
-
-    GLuint samplerHandle = glGetUniformLocation(shaderProgram, "tex");
-    checkGLerror("sampler location");
-
-    glUniform1i(samplerHandle, GL_TEXTURE0);
-    checkGLerror("sending sampler");
-    std::cout << "handle for uniform: " << samplerHandle << std::endl;
-	//glGenerateMipmap(GL_TEXTURE_2D);
-    //checkGLerror("mipmapping");
-    */
-
+    // Load the pixels and size of the specified FITS image.
     std::vector<GLfloat> fitsPixels;
-    std::vector<GLfloat> texturePixels;
     long dim[2];
     loadFits(filename, fitsPixels, dim);
-    enlargeTexturePower2(fitsPixels, texturePixels, dim[0], dim[1], 128, 128);
 
 
+    // OpenGL textures must have side lengths which are powers of two.
+    // Embed the image onto a larger image of that size, and make it RGB.
+    // TODOL Investigate doing this using GL_LUMINANCE
+    std::vector<GLfloat> texturePixels;
+    enlargeTextureRBGPower2(fitsPixels, texturePixels, dim[0], dim[1], 128, 128);
+    fitsPixels.clear();
 
-
-    // srand(1234);
-    // Black/white checkerboard
-    // std::vector<GLfloat> texturePixels;
-    // for (int i=0; i<128; i++){
-    //     for (int j=0; j<128; j++){
-    //         texturePixels.push_back(j/128.0);
-    //         texturePixels.push_back(0.0f);
-    //         texturePixels.push_back(0.0f);
-    //     }
-    // }
-    std::cout << "ntp = " << texturePixels.size() << std::endl;
-    // float pixels[] = {
-    //     0.0f, 0.0f, 0.0f,   1.0f, 1.0f, 1.0f,
-    //     1.0f, 1.0f, 1.0f,   0.0f, 0.0f, 0.0f
-    // };
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 128, 128, 0, GL_RGB, GL_FLOAT, texturePixels.data());
     checkGLerror("TexImage2");
 
 
 
-    // set up a rectangle to draw the 
+    // The texture we define above is drawn onto a rectangle which
+    // we now create by drawing the two triangles that make it up
 
     GLfloat v[42] = {
 //  Position          Color               Texcoords
      -0.25f, 0.25f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // Top-left
       0.25f, 0.25f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // Top-right
-     -0.25f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  // Bottom-left
+     -0.25f, 0.0f,    1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  // Bottom-left
 
-      0.25f,  0.25f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // Top-right
+      0.25f,  0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // Top-right
       0.25f,  0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Bottom-right
      -0.25f,  0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  // Bottom-left
-
-    // -10.0f, -10.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  // Bottom-left
-    //  10.0f, -10.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Bottom-right
-    //  10.0f,  10.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f // Top-right
 	};
 
 	for (int i=0; i<42; i++) vertices.push_back(v[i]);
 
-    // glBindVertexArray(vertexArrayObject);
-    // checkGLerror("Bind VAO");
-    // std::cout << "Have " << vertices.size() << " vertices to put up" << std::endl;
-    // Send our data to the buffer
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*vertices.size(), vertices.data(), GL_STATIC_DRAW);
+    // Send ther data to the GPU
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*vertices.size(), vertices.data(), GL_STATIC_DRAW);
     checkGLerror("BufferData");
 
 
+    //Now define the packed data format we are sending in.
 	GLsizei stride = 7*sizeof(GLfloat);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, 0);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(2*sizeof(float)));
