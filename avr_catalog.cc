@@ -5,11 +5,11 @@
 
 // GLFW
 #include <GLFW/glfw3.h>
-#include "fitsio.h"
 #include "avr_catalog.hh"
 
 #include <iostream>
 #include <fstream>
+#include "fitsio.h"
 
 
 AVRCatalog::AVRCatalog()
@@ -17,18 +17,7 @@ AVRCatalog::AVRCatalog()
 
 }
 
-void AVRCatalog::checkFitsStatus(int status, const char * location)
-{
-	if (status){
-		char message[32];
-		std::cout << "FITS error status: " << status << std::endl;
-		std::cout << "at operation: " << location << std::endl;
-		fits_get_errstatus(status, message);
-		std::cout << "Message: " << message << std::endl;
-		throw message;
-	}
 
-}
 
 void AVRCatalog::push_point(float ra, float dec, float size, float d)
 {

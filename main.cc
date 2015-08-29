@@ -1,5 +1,6 @@
 #include "avr_viewer.hh"
 #include "avr_healpix.hh"
+#include "avr_image.hh"
 #include "avr_catalog.hh"
 
 
@@ -18,13 +19,18 @@ int main(int argc, char * argv[])
     // hmap->load("map.fits");
     // hmap->createProgram("shaders/healpix/vertex.shader", "shaders/healpix/fragment.shader");
 
-    AVRCatalog * catalog = new AVRCatalog();
-	catalog->load("cat.fits");
-	catalog->createProgram("shaders/catalog/vertex.shader", "shaders/catalog/fragment.shader");
+    // AVRCatalog * catalog = new AVRCatalog();
+	// catalog->load("cat.fits");
+	// catalog->createProgram("shaders/catalog/vertex.shader", "shaders/catalog/fragment.shader");
+
+    AVRImage * img = new AVRImage();
+    img->createProgram("shaders/image/vertex.shader", "shaders/image/fragment.shader");
+    img->setupImage("gal.fits");
+    checkGLerror("after load_fits");
+
 
     //Add the healpix map to the scene
-    viewer.objects.push_back(catalog);
-
+    viewer.objects.push_back(img);
    	viewer.runLoop();
 
     // Terminate GLFW, clearing any resources allocated by GLFW.

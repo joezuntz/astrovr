@@ -13,6 +13,16 @@
 #include "avr_object.hh"
 
 
+void checkGLerror(const char * where){
+   GLuint err = glGetError();
+    if (err!=GL_NO_ERROR){
+        const GLubyte* err_string = gluErrorString(err);
+        std::cerr << where << ":" << err_string << std::endl;
+        throw "GLError";
+    }
+}
+
+
 AVRObject::AVRObject() : vertexArrayObject(0), vertexBuffer(0) {
     // Generate a vertex array pointer, which
     // defines where on the GPU our data will be stored (I think)
@@ -35,17 +45,6 @@ AVRObject::~AVRObject(){
 
 }
 
-
-
-void AVRObject::checkGLerror(const char * where){
-   GLuint err = glGetError();
-    if (err!=GL_NO_ERROR){
-        const GLubyte* err_string = gluErrorString(err);
-        std::cerr << where << ":" << err_string << std::endl;
-        throw "GLError";
-    }
-
-}
 
 
 
@@ -126,6 +125,7 @@ GLuint AVRObject::compileShader(const char * filename, GLuint shaderType){
 
 void AVRObject::sendMatrix(const char * name, glm::mat4 &M){
     GLuint handle = glGetUniformLocation(shaderProgram, name);
+    checkGLerror("getting handle");
     glUniformMatrix4fv(handle, 1, GL_FALSE, glm::value_ptr(M));
     checkGLerror(name);
 }
@@ -159,12 +159,11 @@ void AVRObject::createProgram(const char * vertexShaderFilename, const char * fr
     else{
         std::cout << "Compiled shader program." << std::endl;
     }
-
+    useProgram();
 }
 
 
 void AVRObject::useProgram(){
     glBindVertexArray(vertexArrayObject);
     glUseProgram(shaderProgram);
-
 }

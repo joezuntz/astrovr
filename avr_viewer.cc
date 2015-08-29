@@ -47,6 +47,7 @@ void AVRViewer::setupWindow(){
     glfwMakeContextCurrent(window);
     glEnable (GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE_EXT);
+    glEnable(GL_TEXTURE_2D);
 
     // Set the required callback functions
     glfwSetWindowUserPointer(window, this);
@@ -146,28 +147,34 @@ void AVRViewer::runLoop() {
     int nframe = 0;
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
+    glfwWindowShouldClose(window);
+    
 
     while (!glfwWindowShouldClose(window))
     {
         // Clear the buffer window
+        checkGLerror("before clear");
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        checkGLerror("after clear");
 
         // Determine the current matrix that projects
         // from the 3D coordinates to the screen coordinates
         glm::mat4 projection = projectionMatrix();
+        
 
         // Draw each of our objects
         for (AVRObject * object : objects) {
             object->draw(projection);
         }
-
+        checkGLerror("after draw");
 
         //Check for user pressing a key
         glfwPollEvents();
 
         // Swap the screen buffers
         glfwSwapBuffers(window);
+        checkGLerror("after swap");
+
         nframe++;
         if (nframe%100==0){
             double duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
