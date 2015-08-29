@@ -34,7 +34,7 @@ AVRImage::AVRImage(){
 
 }
 
-void AVRImage::loadFits(const char * filename, std::vector<float> &pixel_data)
+void AVRImage::loadFits(const char * filename, std::vector<float> &pixel_data, long dim[2])
 {
 
     // Open the FITS file
@@ -53,7 +53,6 @@ void AVRImage::loadFits(const char * filename, std::vector<float> &pixel_data)
         std::cerr << "Bad image dimension (should be 2) : " << ndim << std::endl;
         throw "image dim";
     }
-    long dim[2];
     fits_get_img_size(fits, ndim, dim, &status);
     checkFitsStatus(status, "getting image size");
 
@@ -76,6 +75,30 @@ void AVRImage::loadFits(const char * filename, std::vector<float> &pixel_data)
     fits_close_file(fits, &status);
 
 }
+
+void AVRImage::enlargeTexturePower2(std::vector<GLfloat> &pixels, 
+    std::vector<GLfloat> &embed_image,
+    int original_width, int original_height,
+    int desired_width, int desired_height
+    )
+{
+    embed_image.resize(3*desired_width*desired_height);
+
+
+    float vmax = -1e30;
+    for (int i=0; i<pixels.size(); i++) if (pixels[i]>vmax) vmax=pixels[i];
+
+    for (int i=0; i<original_width; i++){
+        for (int j=0; j<original_height; j++){
+            std::cout << i << "  " << j << pixels[i*original_height+j] << std::endl;
+            embed_image[(i*desired_height+j)*3+0] = pixels[i*original_height+j]/vmax;
+            embed_image[(i*desired_height+j)*3+1] = pixels[i*original_height+j]/vmax;
+            embed_image[(i*desired_height+j)*3+2] = pixels[i*original_height+j]/vmax;
+        }
+    }
+
+}
+
 void AVRImage::setupImage(const char * filename)
 {
 
@@ -116,40 +139,53 @@ void AVRImage::setupImage(const char * filename)
     //checkGLerror("mipmapping");
     */
 
-    srand(1234);
-    // Black/white checkerboard
+    std::vector<GLfloat> fitsPixels;
     std::vector<GLfloat> texturePixels;
-    for (int i=0; i<16; i++){
-        for (int j=0; j<16; j++){
-            texturePixels.push_back(j/16.0);
-            texturePixels.push_back(0.0f);
-            texturePixels.push_back(0.0f);
-        }
-    }
+    long dim[2];
+    loadFits(filename, fitsPixels, dim);
+    enlargeTexturePower2(fitsPixels, texturePixels, dim[0], dim[1], 128, 128);
+
+
+
+
+    // srand(1234);
+    // Black/white checkerboard
+    // std::vector<GLfloat> texturePixels;
+    // for (int i=0; i<128; i++){
+    //     for (int j=0; j<128; j++){
+    //         texturePixels.push_back(j/128.0);
+    //         texturePixels.push_back(0.0f);
+    //         texturePixels.push_back(0.0f);
+    //     }
+    // }
     std::cout << "ntp = " << texturePixels.size() << std::endl;
     // float pixels[] = {
     //     0.0f, 0.0f, 0.0f,   1.0f, 1.0f, 1.0f,
     //     1.0f, 1.0f, 1.0f,   0.0f, 0.0f, 0.0f
     // };
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 16, 16, 0, GL_RGB, GL_FLOAT, texturePixels.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 128, 128, 0, GL_RGB, GL_FLOAT, texturePixels.data());
     checkGLerror("TexImage2");
 
 
 
     // set up a rectangle to draw the 
 
-    GLfloat v[21] = {
+    GLfloat v[42] = {
 //  Position          Color               Texcoords
-    -1.0f,  -0.5f,   1.0f, 0.0f, 1.0f,   0.0f, 0.0f, // Top-left
-     1.0f,  0.4f,   1.0f, 0.0f, 1.0f,   1.0f, 0.0f, // Top-right
-    -1.0f, -0.4f,   1.0f, 0.0f, 1.0f,   0.0f, 1.0f,  // Bottom-left
+     -0.25f, 0.25f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // Top-left
+      0.25f, 0.25f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // Top-right
+     -0.25f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  // Bottom-left
+
+      0.25f,  0.25f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // Top-right
+      0.25f,  0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Bottom-right
+     -0.25f,  0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  // Bottom-left
 
     // -10.0f, -10.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  // Bottom-left
     //  10.0f, -10.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Bottom-right
     //  10.0f,  10.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f // Top-right
 	};
 
-	for (int i=0; i<21; i++) vertices.push_back(v[i]);
+	for (int i=0; i<42; i++) vertices.push_back(v[i]);
 
     // glBindVertexArray(vertexArrayObject);
     // checkGLerror("Bind VAO");
@@ -180,9 +216,8 @@ void AVRImage::draw(glm::mat4 projection)
 
     useProgram();
     checkGLerror("after useProgram");
-    glm::mat4 projection2;
-    std::cout << glm::to_string(projection2) << std::endl<< std::endl;
-    sendMatrix("projection", projection2);
+    // glm::mat4 projection2;
+    sendMatrix("projection", projection);
     checkGLerror("before drawarrays");
     glDrawArrays(GL_TRIANGLES, 0, vertices.size()/7);
     checkGLerror("after drawarrays");

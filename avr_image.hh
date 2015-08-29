@@ -14,10 +14,15 @@ public:
 
     int width;
     int height;
-	void loadFits(const char * filename, std::vector<float> &pixel_data);
+	void loadFits(const char * filename, std::vector<float> &pixel_data, long dim[2]);
     void setupImage(const char * filename);
     GLuint texture;
     
+	void enlargeTexturePower2(std::vector<GLfloat> &pixels, 
+    std::vector<GLfloat> &embed_image,
+    int original_width, int original_height,
+    int desired_width, int desired_height
+    );
 
     virtual void draw(glm::mat4 projection);
 };
