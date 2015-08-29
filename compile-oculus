@@ -1,0 +1,12 @@
+GL_FLAGS="-framework OpenGL"
+OCULUS_DIR="/Users/jaz/src/oculus/OculusSDK\ 2"
+OCULUS_INCLUDE="-I ${OCULUS_DIR}/LibOVR/Include/  -I ${OCULUS_DIR}/LibOVRKernel/Src/  -F  ${OCULUS_DIR}/LibOVR//Lib/Mac/Release/  -framework LibOVR"
+OCULUS_LINK="-F  ${OCULUS_DIR}/LibOVR//Lib/Mac/Release/  -framework LibOVR"
+
+
+echo $OCULUS_INCLUDE
+CXXFLAGS="-g -O0 -Wno-deprecated-declarations -std=c++11 ${OCULUS_INCLUDE}"
+LDFLAGS="${CXXFLAGS} ${GL_FLAGS} ${HEALPIX_LINK} -lglew -lglfw3"
+
+
+echo g++ avr_oculus.cc ${CXXFLAGS} ${LDFLAGS}
