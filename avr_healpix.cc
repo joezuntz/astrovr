@@ -23,6 +23,10 @@ AVRHealpix::AVRHealpix(int ns, float r) :
     nring = 4*ns-1;
     //Set color map elsewhere
     color_map = new JetColorMap(0.01, 50.0, true);
+
+    // Space for the indices of the vertices
+    glGenBuffers(1, &elementBuffer);
+
 }
 
 AVRHealpix::~AVRHealpix(){
@@ -37,6 +41,72 @@ void AVRHealpix::push_healpix_triangle(vec3 &p1, vec3 &p2, vec3 &p3, glm::vec4 &
     push_triangle(v1, v2, v3, col, scale);
 }
 
+void AVRHealpix::computeCornerIndices(std::vector<vec3> &corners, std::vector<GLuint> &elements)
+{
+    int nring = 4*nside-1;
+    int npix = HP.Npix();
+
+    //Top of the top ring - just the North Pole
+    corners.push_back(vec3(0.0, 0.0, 1.0));
+
+
+    for (int r=1; r<nring; r++){
+        int startpix, ringpix;  
+        double theta;
+        bool shifted;
+        HP.get_ring_info2(r, startpix, ringpix, theta, shifted);
+        for (int p=startpix; p<startpix+ringpix; p++){
+            // Get the four corners of the pixel.
+            // If this turns out to be slow we can speed it up
+            // by pulling out the bits of the boundaries method
+            // that just do the top pixel
+            std::vector<vec3> boundaries;
+            HP.boundaries(p, 1, boundaries);
+            // Get the top corner and save it
+            corners.push_back(boundaries[0]);
+        }
+    }
+
+    //For the bottom row the southern corner is the south pole
+    corners.push_back(vec3(0.0, 0.0, -1.0));
+
+
+    
+
+    for (int i=0; i<npix; i++){
+
+        // First we do the top triangle.
+        // What is the index in the vertices array of the top 
+        // three corners of the i'th pixel?
+        // The top corner is at index i.
+        elements.push_back(i);
+
+        // For the others we need to find the neighbouring pixels.
+        // The ordering that comes out of this function is:
+        // SW, W, NW, N, NE, E, SE and S
+        fix_arr<int,8> neighbors;
+        HP.neighbors(i, neighbors);
+
+        // Then the remaining two vertices are the Norths of the
+        // SE and SW pixels
+        elements.push_back(neighbors[0]);
+        elements.push_back(neighbors[6]);
+
+        // Now we want the vertices of the lower triangle.
+        // To have the same chirality as the first triangle
+        // this must be in the order SE SE S
+        elements.push_back(neighbors[6]);
+        elements.push_back(neighbors[0]);
+
+        // For the southern row the lowest neighbour does
+        // not exist - South pole instead
+        // elements.push_back(neighbors[7]>=0 ? neighbors[7] : npix);
+        elements.push_back(neighbors[7]);
+
+    }
+
+}
+
 void AVRHealpix::load(const char * filename)
 {
 	// Read the map into RAM
@@ -46,20 +116,35 @@ void AVRHealpix::load(const char * filename)
 
     std::cout << "Using  " << npix << " vertices in map" << std::endl;
 
-    //Locate the pixel vertices
+
+
+    // Generate two vectors:
+    // the list of vec3s representing the northern corners of the pixels
+    // the list of indices into the first array that give you the corners of
+    // a given pixel.  This re-uses corners for all the four pixels that surround them
+    std::vector<vec3> corners;
+    std::vector<GLuint> elements;
+    computeCornerIndices(corners, elements);
+
+    // We now want to send the top corners in along 
+    //with the corresponding colors.  The remaining
+    // corners we will send in using the element array
     for (int i=0; i<npix; i++){
-        std::vector<vec3> vd;
-        HP.boundaries(i, 1, vd);
-        // We now have four points, the four coordinates of the pixel edge.
-        // we need to draw two triangles, ABC and ACD
+        // Top corner of pixel
+        vec3 corner = corners[i];
+        // Color of pixel
         GLfloat rgb[3];
         (*color_map)(lowResMap[i], rgb);
 
+        vertices.push_back(corner.x*radius);
+        vertices.push_back(corner.y*radius);
+        vertices.push_back(corner.z*radius);
+        vertices.push_back(rgb[0]);
+        vertices.push_back(rgb[1]);
+        vertices.push_back(rgb[2]);
 
-        glm::vec4 v(rgb[0], rgb[1], rgb[2], 1.0f);
-        push_healpix_triangle(vd[0], vd[1], vd[2], v, radius);
-        push_healpix_triangle(vd[0], vd[2], vd[3], v, radius);
     }
+
 
     // Set our VAO as the active one
     glBindVertexArray(vertexArrayObject);
@@ -69,13 +154,17 @@ void AVRHealpix::load(const char * filename)
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*vertices.size(), vertices.data(), GL_STATIC_DRAW);
     checkGLerror("BufferData");
 
+    // Now send the indices into that array which specify the pixels to use
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*elements.size(), elements.data(), GL_STATIC_DRAW);
+
 
     // Define the inputs of our shaders.
     // First is the pixel location
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0); 
     // Second input is the pixel color
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(4*sizeof(GLfloat)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
     glEnableVertexAttribArray(1); 
 
     checkGLerror("Attrib");
@@ -86,6 +175,8 @@ void AVRHealpix::load(const char * filename)
 void AVRHealpix::draw(glm::mat4 projection)
 {
     useProgram();
+    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
     sendMatrix("projection", projection);    
-    glDrawArrays(GL_TRIANGLES, 0, vertices.size()/3);
+    glDrawElements(GL_TRIANGLES, npix*6, GL_UNSIGNED_INT, 0);
+
 }
