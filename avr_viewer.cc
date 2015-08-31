@@ -1,5 +1,5 @@
 #include "avr_viewer.hh"
-#include <ctime>
+#include <chrono>
 
 // Is called whenever a key is pressed/released via GLFW
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
@@ -143,8 +143,9 @@ glm::mat4 AVRViewer::projectionMatrix(){
 void AVRViewer::runLoop() {
 
 
-    std::clock_t start = std::clock();
+    auto start = std::chrono::system_clock::now();
     int nframe = 0;
+
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glfwWindowShouldClose(window);
@@ -177,9 +178,12 @@ void AVRViewer::runLoop() {
 
         nframe++;
         if (nframe%100==0){
-            double duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-            double fps = nframe/duration;
-            printf("FPS %f\n", fps);
+
+            auto now = std::chrono::system_clock::now();
+            double seconds = std::chrono::duration_cast<
+  std::chrono::duration<double> >(now - start).count();
+            double fps = nframe/seconds;
+            printf("FPS %f  = %d / %f\n", fps, nframe, seconds);
         }
 
     }
