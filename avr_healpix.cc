@@ -46,14 +46,20 @@ void AVRHealpix::computeCornerIndices(std::vector<vec3> &corners, std::vector<GL
     int nring = 4*nside-1;
     int npix = HP.Npix();
 
-    //Top of the top ring - just the North Pole
-    corners.push_back(vec3(0.0, 0.0, 1.0));
+    //Top of the top ring - just the North Pole.
+    //There are 4 pixels on the top row
+    int startpix, ringpix;  
+    double theta;
+    bool shifted;
+
+    HP.get_ring_info2(1, startpix, ringpix, theta, shifted);
+
+    for (int p=startpix; p<startpix+ringpix; p++){
+        corners.push_back(vec3(0.0, 0.0, 1.0));
+    }    
 
 
-    for (int r=1; r<nring; r++){
-        int startpix, ringpix;  
-        double theta;
-        bool shifted;
+    for (int r=2; r<=nring; r++){
         HP.get_ring_info2(r, startpix, ringpix, theta, shifted);
         for (int p=startpix; p<startpix+ringpix; p++){
             // Get the four corners of the pixel.
