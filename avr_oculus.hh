@@ -1,20 +1,8 @@
-#if defined(_WIN32)
- #define GLFW_EXPOSE_NATIVE_WIN32
- #define GLFW_EXPOSE_NATIVE_WGL
- #define OVR_OS_WIN32
-#elif defined(__APPLE__)
- #define GLFW_EXPOSE_NATIVE_COCOA
- #define GLFW_EXPOSE_NATIVE_NSGL
- #define OVR_OS_MAC
-#elif defined(__linux__)
- #define GLFW_EXPOSE_NATIVE_X11
- #define GLFW_EXPOSE_NATIVE_GLX
- #define OVR_OS_LINUX
-#endif
-// #include <GLFW/glfw3native.h>
-#include <OVR_CAPI_GL.h>
-#include <GLFW/glfw3.h>
+#include "avr_gl.hh"
 #include "FBO.h"
+#include "avr_test.hh"
+
+// #include "avr_object.hh"
 
 class AVROculus
 {
@@ -32,8 +20,9 @@ public:
     FBO eyeFBOs[2];
     ovrGLTexture eyeTextures[2];
 	ovrEyeRenderDesc eyeDescriptors[2];
-	GLuint triangleVAO;
-	GLuint triangleBuffer;
+	AVRTest * triangle;
+
+
 
 	void reportError(const char * location);
 	void setup();

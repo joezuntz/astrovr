@@ -1,9 +1,8 @@
 #ifdef _H_AVR_HEALPIX
 #else
 #define _H_AVR_HEALPIX
-
-#include "color_map.hh"
 #include "avr_object.hh"
+#include "color_map.hh"
 #include "healpix_base.h"
 #include "healpix_map.h"
 

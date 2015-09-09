@@ -1,10 +1,10 @@
+// #define GLEW_STATIC
+// #include <GL/glew.h>
 
 #include "avr_oculus.hh"
 #include <iostream>
 #include <fstream>
-#include <OpenGL/gl3.h>
-#include <OpenGL/glu.h>
-// #include "avr_healpix.hh"
+
 
 
 void avr_gl_errorcheck(const char * where)
@@ -34,21 +34,14 @@ void AVROculus::reportError(const char * location)
 
 void AVROculus::configureGLFW()
 {
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);    
 
+    window = avr_setup_window(width, height);
 
-    glfwInit();
-    window = glfwCreateWindow(width, height, 
-        "GLFW Oculus Rift Test", glfwGetPrimaryMonitor(), NULL);
     std::cout << "Window status: " << (window==NULL) << std::endl;
     const char* version = (const char*)glGetString(GL_VERSION);
     if (version) std::cout << "GL Version: " << version << std::endl;
     else std::cerr << "Arg GL Version NULL!" << std::endl;
-    glfwMakeContextCurrent(window);
+
 }
 
 void AVROculus::configureTexture()
@@ -68,9 +61,9 @@ void AVROculus::configureTexture()
     // ovrSizei textureSize;
     // textureSize.w  = leftSize.w + rightSize.w;
     // textureSize.h = std::max(leftSize.h, rightSize.h);
-    const int eyeRenderMultisample = 1;
+    // const int eyeRenderMultisample = 1;
 
-    avr_gl_errorcheck("start of texture");
+    // avr_gl_errorcheck("start of texture");
 
     // std::cout << "Texture: << " << textureSize.w << " x " << textureSize.h  << std::endl;
 
@@ -186,16 +179,19 @@ void AVROculus::setup()
 
 
     
-    status = ovrHmd_ConfigureRendering(hmd, &cfg, 0,
-                                                 hmd->DefaultEyeFov, eyeDescriptors);
+    status = ovrHmd_ConfigureRendering(hmd, &cfg, 0, hmd->DefaultEyeFov, eyeDescriptors);
 
 
-    std::cout << "rendering created!" <<std::endl;
+    std::cout << "rendering configured." <<std::endl;
 
-    configureTexture();
-    configureEyes(); //connect the eyes to the texture
     setupTriangle();
-    
+    avr_gl_errorcheck("triangle");
+    configureTexture();
+    avr_gl_errorcheck("texture");
+    configureEyes(); //connect the eyes to the texture
+    avr_gl_errorcheck("eyes");
+
+
 //  status = ovrHmd_ConfigureRendering(ovrHmd hmd,
 // const ovrRenderAPIConfig* apiConfig,
 // unsigned int distortionCaps,
@@ -207,15 +203,15 @@ void AVROculus::setup()
 void AVROculus::configureEyes(){
     ovrGLTexture& leftEyeTexture = eyeTextures[ovrEye_Left];
     ovrGLTextureData& leftEyeData = leftEyeTexture.OGL;
-    ovrTextureHeader& letEyeHeader = leftEyeData.Header;
+    ovrTextureHeader& leftEyeHeader = leftEyeData.Header;
 
-    letEyeHeader.API = ovrRenderAPI_OpenGL;
-    letEyeHeader.TextureSize.w = width;
-    letEyeHeader.TextureSize.h = height;
-    letEyeHeader.RenderViewport.Pos.x = 0;
-    letEyeHeader.RenderViewport.Pos.y = 0;
-    letEyeHeader.RenderViewport.Size.w = width / 2;
-    letEyeHeader.RenderViewport.Size.h = height;
+    leftEyeHeader.API = ovrRenderAPI_OpenGL;
+    leftEyeHeader.TextureSize.w = width;
+    leftEyeHeader.TextureSize.h = height;
+    leftEyeHeader.RenderViewport.Pos.x = 0;
+    leftEyeHeader.RenderViewport.Pos.y = 0;
+    leftEyeHeader.RenderViewport.Size.w = width / 2;
+    leftEyeHeader.RenderViewport.Size.h = height;
     leftEyeData.TexId = eyeFBOs[ovrEye_Left].tex;
 
     // Right eye the same, except for the x-position in the texture.
@@ -228,51 +224,72 @@ void AVROculus::configureEyes(){
 
 void AVROculus::setupTriangle()
 {
-    glGenVertexArrays(1, &triangleVAO);
-    glBindVertexArray(triangleVAO);
-    static const GLfloat triangleVertices[] = {
-        -2.0f, -2.0f, 0.0f,
-        2.0f, -2.0f, 0.0f,
-        0.0f,  2.0f, 0.0f,
-    };
-    glGenBuffers(1, &triangleBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, triangleBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, 
-        GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void*)0);
-    glBindVertexArray(0);
+    triangle = new AVRTest(0.0f);
+    triangle->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
+}
+
+
+glm::mat4 projectionMatrix(){
+
+    // Model Matrix - from local coordinates to world coordinates
+    glm::mat4 model;
+    model = glm::rotate(model, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
+
+    // View matrix - rotate to the camera plane.  No change here right now
+    glm::mat4 view;
+    // view = lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+
+
+    // Projection matrix - apply perspective
+    glm::mat4 projection;
+    projection = glm::perspective(glm::radians(30.0f), 0.5f, 0.1f, 2.0f);
+
+    projection = projection*view*model;
+    return projection;
 
 
 }
 
+
 void AVROculus::renderEye(ovrEyeType eye){
     bindFBO(eyeFBOs[eye]);
 
-    // Start using the current drawable object.
-    // In this case just a triangle!
-
-    glBindVertexArray(triangleVAO);    
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    if (eye==ovrEye_Right){
+        glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+        std::cout << "Right eye" << std::endl;
+    }
+    else{
+         glClearColor(0.0f, 0.0f, 1.0f, 1.0f);      
+        std::cout << "Left eye" << std::endl;
+    }
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //construct the matrix for this eye
     //push the matrix for the given eye here to the shader.
-
-    // Draw the object.
-    // Normally call method on object.
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-
+    glm::mat4 dummy;
+    triangle->draw(dummy);
+    unbindFBO();
 
 }
 
 
 void AVROculus::runLoop(){
+
     ovrVector3f offset[2] = {eyeDescriptors[0].HmdToEyeViewOffset, eyeDescriptors[1].HmdToEyeViewOffset};
+
+
     ovrTexture eyeTextureGeneric[2];
+
     eyeTextureGeneric[ovrEye_Left] = eyeTextures[ovrEye_Left].Texture;
+    std::cout << eyeTextures[ovrEye_Left].OGL.TexId << std::endl;
+
     eyeTextureGeneric[ovrEye_Right] = eyeTextures[ovrEye_Right].Texture;
+    std::cout << eyeTextures[ovrEye_Right].OGL.TexId << std::endl;
 
     double start = ovr_GetTimeInSeconds();
 
+    //Get rid of the Health and Safety warning asap.
+    ovrHmd_DismissHSWDisplay(hmd);
     while (1){
 
     ovrHmd_BeginFrame(hmd, 0);
@@ -285,17 +302,7 @@ void AVROculus::runLoop(){
 
     if (tracking.StatusFlags & 
         (ovrStatus_OrientationTracked | ovrStatus_PositionTracked )){
-        
-        // of << eyePoses[0].Orientation.x << "  " << eyePoses[0].Orientation.y << "  " 
-        // << eyePoses[0].Orientation.z << "  " << eyePoses[0].Orientation.w << std::endl;
-        // of << eyePoses[0].Orientation.x << "  " << eyePoses[0].Orientation.y << "  " 
-        // << eyePoses[0].Orientation.z << "  " << eyePoses[0].Orientation.w << std::endl;
 
-    }
-    else{
-        std::cerr << "Tracking fail: " << tracking.StatusFlags << "  " << 
-        ovrStatus_OrientationTracked << "  " << ovrStatus_PositionTracked <<
-        std::endl;
     }
 
     renderEye(ovrEye_Left);
@@ -304,14 +311,21 @@ void AVROculus::runLoop(){
     ovrHmd_EndFrame(hmd, eyePoses, eyeTextureGeneric);
 
 
-    if (now-start>5) break;
+    if (now-start>20) break;
     }
 }
 
 
 int main(int argc, char * argv[]){
+
     AVROculus oculus;
-    // oculus.width = 200;
+    int nside = 128;
+    float radius = 0.9;
+    // AVRHealpix * hmap = new AVRHealpix(nside, radius);
+    // hmap->load("map.fits");
+    // hmap->createProgram("shaders/healpix/vertex.shader", "shaders/healpix/fragment.shader");
+    // oculus.object = hmap;
+    // // oculus.width = 200;
     // oculus.height = 200;
     // oculus.configureGLFW();
     oculus.setup();

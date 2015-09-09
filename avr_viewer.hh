@@ -7,31 +7,24 @@
 #include <sstream>
 #include <vector>
 
-#define GLM_FORCE_RADIANS
-// GLEW
-#define GLEW_STATIC
-#include <GL/glew.h>
-
-// GLFW
-#include <GLFW/glfw3.h>
 #include "avr_object.hh"
 
 class AVRViewer
 {
 public:
-	AVRViewer(int w, int h);
+	AVRViewer(GLFWwindow* _window);
 	void setupWindow();
 	void handleInput(int key, int scancode, int action, int mode);
 	glm::mat4 projectionMatrix();
 	void runLoop();
 	/* Window information */
-    GLFWwindow* window;
 	int window_width;// = 800
 	int window_height;// = 600;
 	int buffer_width;// = 800
 	int buffer_height;// = 600;
     GLfloat viewAngle;
     GLfloat aspectRatio;
+    GLFWwindow* window;
 
 	// Objects to render
 	std::vector<AVRObject*> objects;

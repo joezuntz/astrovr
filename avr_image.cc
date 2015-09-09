@@ -1,12 +1,4 @@
-#define GLM_FORCE_RADIANS
-// GLEW
-#define GLEW_STATIC
-#include <GL/glew.h>
-
-// GLFW
-#include <GLFW/glfw3.h>
 #include "avr_catalog.hh"
-
 #include "avr_image.hh"
 #include <iostream>
 #include <fstream>

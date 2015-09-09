@@ -8,11 +8,20 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     viewer->handleInput(key, scancode, action, mode);
 }
 
-AVRViewer::AVRViewer(int w, int h) : window_width(w), window_height(h) {
+AVRViewer::AVRViewer(GLFWwindow* _window) : window(_window){
     cameraPos   = glm::vec3(0.0f, 0.0f,  0.0f);
     cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
     cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
     viewAngle = 90.0f;
+
+    glfwGetWindowSize(window, &window_width, &window_height);
+    aspectRatio = (window_width*1.0f)/window_height;
+
+    glfwGetFramebufferSize(window, &buffer_width, &buffer_height);
+
+    glfwSetWindowUserPointer(window, this);
+    glfwSetKeyCallback(window, key_callback);
+
 
 }
 
