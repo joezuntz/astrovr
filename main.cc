@@ -25,9 +25,9 @@ int main(int argc, char * argv[])
     // AVRTest * test2 = new AVRTest(-1.0f);
     // test2->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
 
-    // AVRCatalog * catalog = new AVRCatalog();
-	// catalog->load("cat.fits");
-	// catalog->createProgram("shaders/catalog/vertex.shader", "shaders/catalog/fragment.shader");
+    AVRCatalog * catalog = new AVRCatalog();
+	catalog->load("cat.fits");
+	catalog->createProgram("shaders/catalog/vertex.shader", "shaders/catalog/fragment.shader");
 
     // AVRImage * img = new AVRImage();
     // img->createProgram("shaders/image/vertex.shader", "shaders/image/fragment.shader");
@@ -36,6 +36,7 @@ int main(int argc, char * argv[])
 
 
     //Add the healpix map to the scene
+    viewer.objects.push_back(catalog);
     viewer.objects.push_back(hmap);
     // viewer.objects.push_back(test2);
    	viewer.runLoop();

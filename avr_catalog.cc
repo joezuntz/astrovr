@@ -95,7 +95,7 @@ void AVRCatalog::load(const char * filename)
     // into the vertices array
     for (int i=0; i<nrows; i++){
     	// ra, dec, size, distance
-    	push_point(ra[i], dec[i], size[i], 0.9);
+    	push_point(ra[i], dec[i], size[i], 0.5);
     }
 
 
