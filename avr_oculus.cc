@@ -48,16 +48,17 @@ void AVROculus::configureTexture()
 {
     // Configure Stereo settings.
     ovrSizei leftSize = ovrHmd_GetFovTextureSize(hmd, 
-        ovrEye_Left, hmd->DefaultEyeFov[0],1.0f);
+        ovrEye_Left, hmd->DefaultEyeFov[ovrEye_Left],1.0f);
+
     ovrSizei rightSize = ovrHmd_GetFovTextureSize(hmd, 
-        ovrEye_Right, hmd->DefaultEyeFov[1],1.0f);
+        ovrEye_Right, hmd->DefaultEyeFov[ovrEye_Right],1.0f);
 
     std::cout << "Left eye: << " << leftSize.w << " x " << leftSize.h  << std::endl;
     std::cout << "Right eye: << " << rightSize.w << " x " << rightSize.h  << std::endl;
 
-    allocateFBO(eyeFBOs[ovrEye_Left], leftSize.w, leftSize.h);
     allocateFBO(eyeFBOs[ovrEye_Right], rightSize.w, rightSize.h);
-
+    allocateFBO(eyeFBOs[ovrEye_Left], leftSize.w, leftSize.h);
+    
     // ovrSizei textureSize;
     // textureSize.w  = leftSize.w + rightSize.w;
     // textureSize.h = std::max(leftSize.h, rightSize.h);
@@ -210,15 +211,17 @@ void AVROculus::configureEyes(){
     leftEyeHeader.TextureSize.h = height;
     leftEyeHeader.RenderViewport.Pos.x = 0;
     leftEyeHeader.RenderViewport.Pos.y = 0;
-    leftEyeHeader.RenderViewport.Size.w = width / 2;
+    leftEyeHeader.RenderViewport.Size.w = width;
     leftEyeHeader.RenderViewport.Size.h = height;
     leftEyeData.TexId = eyeFBOs[ovrEye_Left].tex;
 
     // Right eye the same, except for the x-position in the texture.
-    ovrGLTexture& rightEyeTexture = eyeTextures[ovrEye_Right];
-    rightEyeTexture = leftEyeTexture;
-    rightEyeTexture.OGL.Header.RenderViewport.Pos.x = (width + 1) / 2;
-    rightEyeTexture.OGL.TexId = eyeFBOs[ovrEye_Right].tex;
+    // ovrGLTexture& rightEyeTexture = eyeTextures[ovrEye_Right];
+    eyeTextures[ovrEye_Right] = leftEyeTexture;
+    // rightEyeTexture = leftEyeTexture;
+    // eyeTextures[ovrEye_Right].OGL.Header.RenderViewport.Pos.x = (width + 1) / 2;
+    // rightEyeTexture.OGL.Header.RenderViewport.Pos.x = width/2;
+    eyeTextures[ovrEye_Right].OGL.TexId = eyeFBOs[ovrEye_Right].tex;
 
 }
 
@@ -226,6 +229,8 @@ void AVROculus::setupTriangle()
 {
     triangle = new AVRTest(0.0f);
     triangle->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
+    triangle2 = new AVRTest(-0.0f);
+    triangle2->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
 }
 
 
@@ -253,21 +258,24 @@ glm::mat4 projectionMatrix(){
 
 void AVROculus::renderEye(ovrEyeType eye){
     bindFBO(eyeFBOs[eye]);
+    glm::mat4 dummy;
 
     if (eye==ovrEye_Right){
-        glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
-        std::cout << "Right eye" << std::endl;
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        triangle->draw(dummy);
+
+        // std::cout << "Right eye" << std::endl;
     }
     else{
-         glClearColor(0.0f, 0.0f, 1.0f, 1.0f);      
-        std::cout << "Left eye" << std::endl;
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);      
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        triangle2->draw(dummy);
+        // std::cout << "Left eye" << std::endl;
     }
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //construct the matrix for this eye
     //push the matrix for the given eye here to the shader.
-    glm::mat4 dummy;
-    triangle->draw(dummy);
     unbindFBO();
 
 }
@@ -305,8 +313,8 @@ void AVROculus::runLoop(){
 
     }
 
-    renderEye(ovrEye_Left);
     renderEye(ovrEye_Right);
+    renderEye(ovrEye_Left);
 
     ovrHmd_EndFrame(hmd, eyePoses, eyeTextureGeneric);
 

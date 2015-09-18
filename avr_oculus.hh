@@ -21,6 +21,7 @@ public:
     ovrGLTexture eyeTextures[2];
 	ovrEyeRenderDesc eyeDescriptors[2];
 	AVRTest * triangle;
+	AVRTest * triangle2;
 
 
 
