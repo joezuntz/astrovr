@@ -17,6 +17,7 @@ public:
 	void handleInput(int key, int scancode, int action, int mode);
 	glm::mat4 projectionMatrix();
 	void runLoop();
+	void updatePointing(float deltaTime);	
 	/* Window information */
 	int window_width;// = 800
 	int window_height;// = 600;
@@ -33,6 +34,8 @@ public:
     glm::vec3 cameraPos;
     glm::vec3 cameraFront;
     glm::vec3 cameraUp;
+
+    glm::vec3 rotationalVelocity;
 
 
 };

@@ -12,6 +12,7 @@ AVRViewer::AVRViewer(GLFWwindow* _window) : window(_window){
     cameraPos   = glm::vec3(0.0f, 0.0f,  0.0f);
     cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
     cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+    rotationalVelocity = glm::vec3(0.0f, 0.0f,  0.0f);
     viewAngle = 90.0f;
 
     glfwGetWindowSize(window, &window_width, &window_height);
@@ -90,35 +91,32 @@ void AVRViewer::handleInput(int key, int scancode, int action, int mode){
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
     GLfloat cameraSpeed = 0.05f;
-    GLfloat ang = glm::radians(5.0f);
+    GLfloat ang = glm::radians(1.0f);
 
-    if(key == GLFW_KEY_W){
-        glm::vec3 u = cameraUp;
-        cameraUp = cosf(ang)*cameraUp - sinf(ang)*cameraFront;
-        cameraFront = cosf(ang)*cameraFront + sinf(ang)*u;
-    }
-    if(key == GLFW_KEY_S){
-        glm::vec3 u = cameraUp;
-        cameraUp = cosf(-ang)*cameraUp - sinf(-ang)*cameraFront;
-        cameraFront = cosf(-ang)*cameraFront + sinf(-ang)*u;
+    if(key == GLFW_KEY_D){
+        rotationalVelocity = rotationalVelocity + 0.1f*cameraUp;
     }
     if(key == GLFW_KEY_A){
-        glm::vec3 perp = glm::cross(cameraFront, cameraUp);
-        cameraFront = cosf(-ang)*cameraFront + sinf(-ang)*perp;
+        rotationalVelocity = rotationalVelocity - 0.1f*cameraUp;
     }
-    // glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if(key == GLFW_KEY_D){
+    if(key == GLFW_KEY_W){
         glm::vec3 perp = glm::cross(cameraFront, cameraUp);
-        cameraFront = cosf(ang)*cameraFront + sinf(ang)*perp;
+        rotationalVelocity = rotationalVelocity + 0.1f*perp;
+    }
+    if(key == GLFW_KEY_S){
+        glm::vec3 perp = glm::cross(cameraFront, cameraUp);
+        rotationalVelocity = rotationalVelocity - 0.1f*perp;
     }
 
     if(key == GLFW_KEY_Q){
-        glm::vec3 perp = glm::cross(cameraFront, cameraUp);
-        cameraUp = cosf(ang)*cameraUp + sinf(ang)*perp;
+        rotationalVelocity = rotationalVelocity - 0.1f*cameraFront;
     }
     if(key == GLFW_KEY_E){
-        glm::vec3 perp = glm::cross(cameraFront, cameraUp);
-        cameraUp = cosf(-ang)*cameraUp + sinf(-ang)*perp;
+        rotationalVelocity = rotationalVelocity + 0.1f*cameraFront;
+    }
+
+    if(key == GLFW_KEY_X){
+        rotationalVelocity = glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
     if(key == GLFW_KEY_R){
@@ -149,12 +147,21 @@ glm::mat4 AVRViewer::projectionMatrix(){
 
 }
 
+void AVRViewer::updatePointing(float deltaTime) {
+    glm::vec3 deltaFront = glm::cross(cameraFront, rotationalVelocity)*deltaTime;
+    glm::vec3 deltaUp = glm::cross(cameraUp, rotationalVelocity)*deltaTime;
+    cameraUp = glm::normalize(cameraUp + deltaUp);
+    cameraFront = glm::normalize(cameraFront + deltaFront);
+
+}
+
+
 void AVRViewer::runLoop() {
 
 
     auto start = std::chrono::system_clock::now();
+    auto last = start;
     int nframe = 0;
-
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glfwWindowShouldClose(window);
@@ -166,6 +173,14 @@ void AVRViewer::runLoop() {
         checkGLerror("before clear");
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         checkGLerror("after clear");
+
+
+        auto now = std::chrono::system_clock::now();
+        float seconds = std::chrono::duration_cast<
+          std::chrono::duration<float> >(now - last).count();
+        last = now;
+
+        updatePointing(seconds);
 
         // Determine the current matrix that projects
         // from the 3D coordinates to the screen coordinates
@@ -188,9 +203,6 @@ void AVRViewer::runLoop() {
         nframe++;
         if (nframe%100==0){
 
-            auto now = std::chrono::system_clock::now();
-            double seconds = std::chrono::duration_cast<
-  std::chrono::duration<double> >(now - start).count();
             double fps = nframe/seconds;
             printf("FPS %f  = %d / %f\n", fps, nframe, seconds);
         }
