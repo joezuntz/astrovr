@@ -14,16 +14,16 @@ int main(int argc, char * argv[])
 
 
     // Set up the Healpix map object
-    // int nside = 128;
-    // float radius = 0.9f;
-    // AVRHealpix * hmap = new AVRHealpix(nside, radius);
-    // hmap->load("map.fits");
-    // hmap->createProgram("shaders/healpix/vertex.shader", "shaders/healpix/fragment.shader");
+    int nside = 128;
+    float radius = 0.9f;
+    AVRHealpix * hmap = new AVRHealpix(nside, radius);
+    hmap->load("map.fits");
+    hmap->createProgram("shaders/healpix/vertex.shader", "shaders/healpix/fragment.shader");
 
-    AVRTest * test = new AVRTest(0.0f);
-    test->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
-    AVRTest * test2 = new AVRTest(-1.0f);
-    test2->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
+    // AVRTest * test = new AVRTest(0.0f);
+    // test->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
+    // AVRTest * test2 = new AVRTest(-1.0f);
+    // test2->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
 
     // AVRCatalog * catalog = new AVRCatalog();
 	// catalog->load("cat.fits");
@@ -36,8 +36,8 @@ int main(int argc, char * argv[])
 
 
     //Add the healpix map to the scene
-    viewer.objects.push_back(test);
-    viewer.objects.push_back(test2);
+    viewer.objects.push_back(hmap);
+    // viewer.objects.push_back(test2);
    	viewer.runLoop();
 
     // Terminate GLFW, clearing any resources allocated by GLFW.
