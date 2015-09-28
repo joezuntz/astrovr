@@ -1,6 +1,7 @@
 #include "avr_gl.hh"
 #include "FBO.h"
 #include "avr_test.hh"
+#include "avr_healpix.hh"
 
 // #include "avr_object.hh"
 
@@ -20,8 +21,7 @@ public:
     FBO eyeFBOs[2];
     ovrGLTexture eyeTextures[2];
 	ovrEyeRenderDesc eyeDescriptors[2];
-	AVRTest * triangle;
-	AVRTest * triangle2;
+	AVRHealpix * hmap;
 
 
 
@@ -32,6 +32,6 @@ public:
 	void configureGLFW();
 	void configureEyes();	
 	void renderEye(ovrEyeType eye);
-	void setupTriangle(); //Temporary test method
-
+	void setupHealpixMap(); //Temporary test method
+	glm::mat4 projectionMatrix(ovrEyeType eye);
 };

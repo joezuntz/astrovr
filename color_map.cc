@@ -53,5 +53,6 @@ float JetColorMap::operator()(float x, float c[3]){
 	c[0] = red(v);
 	c[1] = green(v);
 	c[2] = blue(v);
+	return 1.0;
 }
 

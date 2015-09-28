@@ -4,8 +4,6 @@ layout (location = 0) in vec3 pixels; // position and
 layout (location = 1) in vec3 color; // position and 
 out vec4 color_; // Specify a color output to the fragment shader
 
-//uniform mat4 model;
-//uniform mat4 view;
 uniform mat4 projection;
 
 void main(){

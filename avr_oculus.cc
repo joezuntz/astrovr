@@ -2,6 +2,7 @@
 // #include <GL/glew.h>
 
 #include "avr_oculus.hh"
+#include "Kernel/OVR_Math.h"
 #include <iostream>
 #include <fstream>
 
@@ -43,6 +44,15 @@ void AVROculus::configureGLFW()
     else std::cerr << "Arg GL Version NULL!" << std::endl;
 
 }
+
+glm::mat4 makeMatrixFromPose(const ovrPosef& eyePose)
+{
+    const OVR::Vector3f& p = eyePose.Position;
+    const OVR::Quatf& q = eyePose.Orientation;
+    return glm::translate(glm::mat4(1.f), glm::vec3(p.x, p.y, p.z))
+        * glm::mat4_cast(glm::quat(q.w, q.x, q.y, q.z));
+}
+
 
 void AVROculus::configureTexture()
 {
@@ -128,7 +138,7 @@ void AVROculus::configureTexture()
 void AVROculus::setup()
 {
 
-    ovrBool status = ovr_Initialize(NULL);
+    ovrBool status = ovr_Initialize();
     if (!status) reportError("initializing");
 
     // Looks like this is changing
@@ -185,8 +195,8 @@ void AVROculus::setup()
 
     std::cout << "rendering configured." <<std::endl;
 
-    setupTriangle();
-    avr_gl_errorcheck("triangle");
+    setupHealpixMap();
+    avr_gl_errorcheck("setting up objects");
     configureTexture();
     avr_gl_errorcheck("texture");
     configureEyes(); //connect the eyes to the texture
@@ -225,30 +235,70 @@ void AVROculus::configureEyes(){
 
 }
 
-void AVROculus::setupTriangle()
+void AVROculus::setupHealpixMap()
 {
-    triangle = new AVRTest(0.0f);
-    triangle->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
-    triangle2 = new AVRTest(-0.0f);
-    triangle2->createProgram("shaders/test/vertex.shader", "shaders/test/fragment.shader");
+    hmap = new AVRHealpix(256, 1.0);
+    hmap->createProgram("shaders/healpix/vertex.shader", "shaders/healpix/fragment.shader");
+    hmap->load("/Users/jaz/data/wmap_band_imap_r9_9yr_K_v5.fits");
 }
 
 
-glm::mat4 projectionMatrix(){
+static glm::vec3 getEulerAngles(const ovrQuatf & in1) {
+    OVR::Quat<float> in(in1);
+    glm::vec3 eulerAngles;
 
-    // Model Matrix - from local coordinates to world coordinates
-    glm::mat4 model;
-    model = glm::rotate(model, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
+    in.GetEulerAngles<OVR::Axis_X, OVR::Axis_Y, OVR::Axis_Z,OVR::Rotate_CW, OVR::Handed_R>
+    (&eulerAngles.x, &eulerAngles.y, &eulerAngles.z);
 
-    // View matrix - rotate to the camera plane.  No change here right now
-    glm::mat4 view;
-    // view = lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    return eulerAngles;
+}
+
+static glm::quat fromOvr(const ovrQuatf & in) {
+    return glm::quat(getEulerAngles(in));
+}
 
 
+static glm::mat4 OVRToGLMat4(ovrMatrix4f m1)
+{
+    OVR::Matrix4f m(m1);
+    glm::mat4 ret;
+    m.Transpose();
+    memcpy(& ret, & m, sizeof(OVR::Matrix4f));
+    return ret;
+}
+
+
+glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye){
+
+    ovrPosef pose = eyePoses[eye];
+
+    /* Quat to Mat4 */   
+    glm::mat4 model; 
+    // glm::mat4 model = glm::mat4(1.0);
+    // glm::mat4 model = glm::scale(2.0f);
+    // model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+
+    // std::cout << (int) eye << "   " << pose.Position.x << "  " << pose.Position.y << "  "<< pose.Position.z << "  " <<  std::endl;
+
+     model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+     model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+     // model = glm::scale(model, 2.0f);
+    // std::cout << glm::to_string(model) << std::endl << std::endl; 
+    // std::cout << glm::to_string(model) <<  std::endl;
+
+    // glm::quat q = fromOvr(pose.Orientation);
+    // glm::mat4 view = glm::mat4_cast(q);   //rotation is glm::quat
+    glm::mat4 view = glm::inverse(makeMatrixFromPose(pose));
+
+
+    // glm::vec3 shift = glm::vec3(pose.Position.x, pose.Position.y, pose.Position.z);
+    // view = glm::translate(view, shift);
     // Projection matrix - apply perspective
-    glm::mat4 projection;
-    projection = glm::perspective(glm::radians(30.0f), 0.5f, 0.1f, 2.0f);
+    // std::cout << hmd->DefaultEyeFov[ovrEye_Left] std::endl;
+    // glm::mat4 projection = glm::perspective(glm::radians(120.0f), 0.9f, 0.2f, 100.0f);
 
+    ovrMatrix4f p1 = ovrMatrix4f_Projection(eyeDescriptors[eye].Fov,0.01f, 1000.0f, true);
+    glm::mat4 projection = OVRToGLMat4(p1);
     projection = projection*view*model;
     return projection;
 
@@ -258,24 +308,14 @@ glm::mat4 projectionMatrix(){
 
 void AVROculus::renderEye(ovrEyeType eye){
     bindFBO(eyeFBOs[eye]);
-    glm::mat4 dummy;
+    glm::mat4 projection = projectionMatrix(eye);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (eye==ovrEye_Right){
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        triangle->draw(dummy);
+    // Draw the scene here.
+    hmap->draw(projection);
 
-        // std::cout << "Right eye" << std::endl;
-    }
-    else{
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);      
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        triangle2->draw(dummy);
-        // std::cout << "Left eye" << std::endl;
-    }
-
-    //construct the matrix for this eye
-    //push the matrix for the given eye here to the shader.
+    
     unbindFBO();
 
 }
@@ -319,7 +359,7 @@ void AVROculus::runLoop(){
     ovrHmd_EndFrame(hmd, eyePoses, eyeTextureGeneric);
 
 
-    if (now-start>20) break;
+    // if (now-start>20) break;
     }
 }
 
@@ -327,8 +367,6 @@ void AVROculus::runLoop(){
 int main(int argc, char * argv[]){
 
     AVROculus oculus;
-    int nside = 128;
-    float radius = 0.9;
     // AVRHealpix * hmap = new AVRHealpix(nside, radius);
     // hmap->load("map.fits");
     // hmap->createProgram("shaders/healpix/vertex.shader", "shaders/healpix/fragment.shader");

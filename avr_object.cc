@@ -116,7 +116,7 @@ GLuint AVRObject::compileShader(const char * filename, GLuint shaderType){
 
 void AVRObject::sendMatrix(const char * name, glm::mat4 &M){
     GLuint handle = glGetUniformLocation(shaderProgram, name);
-    checkGLerror("getting handle");
+    checkGLerror("getting shader handle");
     glUniformMatrix4fv(handle, 1, GL_FALSE, glm::value_ptr(M));
     checkGLerror(name);
 }

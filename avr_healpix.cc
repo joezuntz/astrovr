@@ -14,7 +14,7 @@ AVRHealpix::AVRHealpix(int ns, float r) :
     order = (int)log2(ns);
     nring = 4*ns-1;
     //Set color map elsewhere
-    color_map = new JetColorMap(0.01, 50.0, true);
+    color_map = new JetColorMap(0.1, 5.0, true);
 
     // Space for the indices of the vertices
     glGenBuffers(1, &elementBuffer);
