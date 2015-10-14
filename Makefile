@@ -9,13 +9,16 @@ OCULUS_INCLUDE=-I $(OCULUS_DIR)/LibOVR/Include/  -I $(OCULUS_DIR)/LibOVR/Src/
 OCULUS_LINK=-L$(OCULUS_DIR)/LibOVR/Lib/Mac/Release -lovr -framework Foundation -framework CoreGraphics -framework IOKit
 #-F  $(OCULUS_DIR)/LibOVR//Lib/Mac/Release/  -framework LibOVR
 
-CXXFLAGS=-g -O0 -Wno-deprecated-declarations -std=c++11 -Wno-write-strings $(HEALPIX_INCLUDE) $(OCULUS_INCLUDE)
-LDFLAGS=$(CXXFLAGS) $(GL_FLAGS) $(HEALPIX_LINK) -lglew -lglfw3
+PNG_DIR=/opt/X11
+PNG_INCLUDE=-I$(PNG_DIR)/include
+PNG_LINK=-L$(PNG_DIR)/lib -l png
+CXXFLAGS=-g -O0 -Wno-deprecated-declarations -std=c++11 -Wno-write-strings $(HEALPIX_INCLUDE) $(OCULUS_INCLUDE) $(PNG_INCLUDE)
+LDFLAGS=$(CXXFLAGS) $(GL_FLAGS) $(HEALPIX_LINK) -lglew -lglfw3 $(PNG_LINK)
 
 
 CXX=g++
 
-OBJ=avr_object.o avr_healpix.o avr_catalog.o avr_viewer.o avr_image.o avr_test.o avr_fits.o  color_map.o avr_gl.o
+OBJ=avr_object.o avr_sphere.o avr_healpix.o avr_catalog.o avr_viewer.o avr_image.o avr_test.o avr_fits.o  color_map.o avr_gl.o
 
 oculus: avr_oculus.cc FBO.cc $(OBJ)
 	$(CXX) avr_oculus.cc FBO.cc  $(OBJ) -o oculus $(HEALPIX_INCLUDE) $(CXXFLAGS) $(OCULUS_INCLUDE)  $(LDFLAGS) $(OCULUS_LINK) $(HEALPIX_LINK)
@@ -25,7 +28,7 @@ oculus: avr_oculus.cc FBO.cc $(OBJ)
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) $(HEALPIX_INCLUDE) -c  $<
 
-main: $(OBJ)
+main: $(OBJ) main.cc
 	$(CXX) $(CXXFLAGS) -o main main.cc $(OBJ)  $(LDFLAGS)
 
 
