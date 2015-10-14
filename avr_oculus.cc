@@ -69,70 +69,6 @@ void AVROculus::configureTexture()
     allocateFBO(eyeFBOs[ovrEye_Right], rightSize.w, rightSize.h);
     allocateFBO(eyeFBOs[ovrEye_Left], leftSize.w, leftSize.h);
     
-    // ovrSizei textureSize;
-    // textureSize.w  = leftSize.w + rightSize.w;
-    // textureSize.h = std::max(leftSize.h, rightSize.h);
-    // const int eyeRenderMultisample = 1;
-
-    // avr_gl_errorcheck("start of texture");
-
-    // std::cout << "Texture: << " << textureSize.w << " x " << textureSize.h  << std::endl;
-
-    // glGenFramebuffers(1, &frameBuffer);
-    // glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
-
-
-
-
-
-    // glGenTextures(1, &texture);
-
-
-    // // Give an empty image to OpenGL ( the last "0" )
-    // glBindTexture(GL_TEXTURE_2D, texture);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 768, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-
-    // // Depth attachment.
-    // glGenRenderbuffers(1, &depthBuffer);
-    // glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
-    // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
-    // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
-    // glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
-    // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    // glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
-
-
-    // std::cout << "STATUS  " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << "  where good = " << GL_FRAMEBUFFER_COMPLETE << std::endl;
-
-    // int w, h;
-    // glfwGetFramebufferSize(window, &w, &h);
-    //   std::cout << "FB size  " << w << "   " << h  << std::endl;
-  
-
-
-    // int width, height;
-    // glfwGetFramebufferSize(window, &width, &height);
-    // union ovrGLConfig config;
-    // config.OGL.Header.BackBufferSize.w = w;
-    // config.OGL.Header.BackBufferSize.h = h;
-// #if defined(_WIN32)
-//     config.OGL.Window = glfwGetWin32Window(window);
-// #elif defined(__APPLE__)
-// #elif defined(__linux__)
-//     config.OGL.Disp = glfwGetX11Display();
-// #endif
-
-    // Now create OpenGL texture
-
-//    pRendertargetTexture = pRender->CreateTexture(
-// Texture_RGBA | Texture_RenderTarget | eyeRenderMultisample,
-// renderTargetSize.w, renderTargetSize.h, NULL);
-//    // The actual RT size may be different due to HW limits.
-//    renderTargetSize.w = pRendertargetTexture->GetWidth();
-//    renderTargetSize.h = pRendertargetTexture->GetHeight();
 }
 
 void AVROculus::setup()
@@ -240,6 +176,11 @@ void AVROculus::setupHealpixMap()
     hmap = new AVRHealpix(512, 1.0);
     hmap->createProgram("shaders/healpix/vertex.shader", "shaders/healpix/fragment.shader");
     hmap->load("/Users/jaz/data/wmap_band_imap_r9_9yr_K_v5.fits");
+
+    // sphere = new AVRSphere(0.9);
+    // sphere->load("Fermi_3yr_stretch.png");
+    // sphere->createProgram("shaders/sphere/vertex.shader", "shaders/sphere/fragment.shader");
+
 }
 
 
@@ -361,13 +302,6 @@ void AVROculus::runLoop(){
 int main(int argc, char * argv[]){
 
     AVROculus oculus;
-    // AVRHealpix * hmap = new AVRHealpix(nside, radius);
-    // hmap->load("map.fits");
-    // hmap->createProgram("shaders/healpix/vertex.shader", "shaders/healpix/fragment.shader");
-    // oculus.object = hmap;
-    // // oculus.width = 200;
-    // oculus.height = 200;
-    // oculus.configureGLFW();
     oculus.setup();
     oculus.runLoop();
 

@@ -2,6 +2,7 @@
 #include "FBO.h"
 #include "avr_test.hh"
 #include "avr_healpix.hh"
+#include "avr_sphere.hh"
 
 // #include "avr_object.hh"
 
@@ -22,6 +23,7 @@ public:
     ovrGLTexture eyeTextures[2];
 	ovrEyeRenderDesc eyeDescriptors[2];
 	AVRHealpix * hmap;
+	AVRSphere * sphere;
     double startTime;
 
 
