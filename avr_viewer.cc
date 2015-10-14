@@ -203,7 +203,7 @@ void AVRViewer::runLoop() {
         nframe++;
         if (nframe%100==0){
 
-            double fps = nframe/seconds;
+            double fps = 1.0/seconds;
             printf("FPS %f  = %d / %f\n", fps, nframe, seconds);
         }
 
