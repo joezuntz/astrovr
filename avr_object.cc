@@ -34,6 +34,8 @@ AVRObject::AVRObject() : vertexArrayObject(0), vertexBuffer(0) {
 
 AVRObject::~AVRObject(){
 
+    // delete the vertex buffers here
+
 }
 
 
