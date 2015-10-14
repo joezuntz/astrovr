@@ -14,7 +14,7 @@ AVRHealpix::AVRHealpix(int ns, float r) :
     order = (int)log2(ns);
     nring = 4*ns-1;
     //Set color map elsewhere
-    color_map = new JetColorMap(0.1, 5.0, true);
+    color_map = new JetColorMap(0.1, 6.0, true);
 
     // Space for the indices of the vertices
     glGenBuffers(1, &elementBuffer);
@@ -40,13 +40,13 @@ void AVRHealpix::computeCornerIndices(std::vector<vec3> &corners, std::vector<GL
 
     //Top of the top ring - just the North Pole.
     //There are 4 pixels on the top row
-    int startpix, ringpix;  
+    int startpix, ringpix, ringpix0;  
     double theta;
     bool shifted;
 
-    HP.get_ring_info2(1, startpix, ringpix, theta, shifted);
+    HP.get_ring_info2(1, startpix, ringpix0, theta, shifted);
 
-    for (int p=startpix; p<startpix+ringpix; p++){
+    for (int p=startpix; p<startpix+ringpix0; p++){
         corners.push_back(vec3(0.0, 0.0, 1.0));
     }    
 
@@ -66,7 +66,9 @@ void AVRHealpix::computeCornerIndices(std::vector<vec3> &corners, std::vector<GL
     }
 
     //For the bottom row the southern corner is the south pole
-    corners.push_back(vec3(0.0, 0.0, -1.0));
+    // for (int p=0; p<ringpix0; p++){
+        corners.push_back(vec3(0.0, 0.0, -1.0));
+    // }
 
 
     
@@ -98,8 +100,8 @@ void AVRHealpix::computeCornerIndices(std::vector<vec3> &corners, std::vector<GL
 
         // For the southern row the lowest neighbour does
         // not exist - South pole instead
-        // elements.push_back(neighbors[7]>=0 ? neighbors[7] : npix);
-        elements.push_back(neighbors[7]);
+        elements.push_back(neighbors[7]>=0 ? neighbors[7] : npix-1);
+        // elements.push_back(neighbors[7]);
 
     }
 
