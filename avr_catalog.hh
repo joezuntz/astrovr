@@ -10,7 +10,6 @@ class AVRCatalog : public AVRFits {
 public:
 
     AVRCatalog();	
-    ~AVRCatalog();
     void load(const char * filename);
     virtual void draw(glm::mat4 projection);
     void push_point(float ra, float dec, float size, float d);
