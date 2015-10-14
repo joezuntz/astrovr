@@ -22,6 +22,7 @@ public:
     ovrGLTexture eyeTextures[2];
 	ovrEyeRenderDesc eyeDescriptors[2];
 	AVRHealpix * hmap;
+    double startTime;
 
 
 

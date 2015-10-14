@@ -237,7 +237,7 @@ void AVROculus::configureEyes(){
 
 void AVROculus::setupHealpixMap()
 {
-    hmap = new AVRHealpix(256, 1.0);
+    hmap = new AVRHealpix(512, 1.0);
     hmap->createProgram("shaders/healpix/vertex.shader", "shaders/healpix/fragment.shader");
     hmap->load("/Users/jaz/data/wmap_band_imap_r9_9yr_K_v5.fits");
 }
@@ -271,31 +271,25 @@ static glm::mat4 OVRToGLMat4(ovrMatrix4f m1)
 glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye){
 
     ovrPosef pose = eyePoses[eye];
+    double timeSinceStart = ovr_GetTimeInSeconds() - startTime;
+    float rotationRate = 10.0f; // degrees persecond
+    float rotAngle = rotationRate * timeSinceStart;
 
-    /* Quat to Mat4 */   
-    glm::mat4 model; 
-    // glm::mat4 model = glm::mat4(1.0);
-    // glm::mat4 model = glm::scale(2.0f);
-    // model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+    /* Model.  We just center it at zero */   
 
-    // std::cout << (int) eye << "   " << pose.Position.x << "  " << pose.Position.y << "  "<< pose.Position.z << "  " <<  std::endl;
+    glm::mat4 rot1 = glm::rotate(glm::mat4(), glm::radians(90.0f),   glm::vec3(0.0f, 0.0f, 1.0f));
+    glm::mat4 rot2 = glm::rotate(glm::mat4(), glm::radians(-90.0f),    glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::mat4 rot3 = glm::rotate(glm::mat4(), glm::radians(rotAngle), glm::vec3(0.0f, 0.0f, 1.0f));
+    // glm::mat4 tran = glm::translate(glm::mat4(), glm::vec3(2.0f, 0.0f, 0.0f));
+    // glm::mat4 tran = glm::mat4();
+    float scale_factor = 10.0f;
+    glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(scale_factor,scale_factor,scale_factor));
 
-     model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-     model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-     // model = glm::scale(model, 2.0f);
-    // std::cout << glm::to_string(model) << std::endl << std::endl; 
-    // std::cout << glm::to_string(model) <<  std::endl;
+    glm::mat4 model = scl*rot2*rot1;
 
-    // glm::quat q = fromOvr(pose.Orientation);
-    // glm::mat4 view = glm::mat4_cast(q);   //rotation is glm::quat
+
     glm::mat4 view = glm::inverse(makeMatrixFromPose(pose));
 
-
-    // glm::vec3 shift = glm::vec3(pose.Position.x, pose.Position.y, pose.Position.z);
-    // view = glm::translate(view, shift);
-    // Projection matrix - apply perspective
-    // std::cout << hmd->DefaultEyeFov[ovrEye_Left] std::endl;
-    // glm::mat4 projection = glm::perspective(glm::radians(120.0f), 0.9f, 0.2f, 100.0f);
 
     ovrMatrix4f p1 = ovrMatrix4f_Projection(eyeDescriptors[eye].Fov,0.01f, 1000.0f, true);
     glm::mat4 projection = OVRToGLMat4(p1);
@@ -315,7 +309,7 @@ void AVROculus::renderEye(ovrEyeType eye){
     // Draw the scene here.
     hmap->draw(projection);
 
-    
+
     unbindFBO();
 
 }
@@ -334,7 +328,7 @@ void AVROculus::runLoop(){
     eyeTextureGeneric[ovrEye_Right] = eyeTextures[ovrEye_Right].Texture;
     std::cout << eyeTextures[ovrEye_Right].OGL.TexId << std::endl;
 
-    double start = ovr_GetTimeInSeconds();
+    startTime = ovr_GetTimeInSeconds();
 
     //Get rid of the Health and Safety warning asap.
     ovrHmd_DismissHSWDisplay(hmd);
