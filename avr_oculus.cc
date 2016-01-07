@@ -223,7 +223,7 @@ glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye){
     glm::mat4 rot3 = glm::rotate(glm::mat4(), glm::radians(rotAngle), glm::vec3(0.0f, 0.0f, 1.0f));
     // glm::mat4 tran = glm::translate(glm::mat4(), glm::vec3(2.0f, 0.0f, 0.0f));
     // glm::mat4 tran = glm::mat4();
-    float scale_factor = 10.0f;
+    float scale_factor = 1.0f;
     glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(scale_factor,scale_factor,scale_factor));
 
     glm::mat4 model = scl*rot2*rot1;

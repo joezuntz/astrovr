@@ -14,7 +14,7 @@ void checkGLerror(const char * where){
 }
 
 
-AVRObject::AVRObject() : vertexArrayObject(0), vertexBuffer(0) {
+AVRObject::AVRObject() : vertexArrayObject(0), vertexBuffer(0), enabled(true) {
     // Generate a vertex array pointer, which
     // defines where on the GPU our data will be stored (I think)
     glGenVertexArrays(1, &vertexArrayObject);
@@ -129,6 +129,7 @@ void AVRObject::createProgram(const char * vertexShaderFilename, const char * fr
     // Create the program
     glBindVertexArray(vertexArrayObject);
     shaderProgram = glCreateProgram();
+    printf("Shader program = %d\n", shaderProgram);
 
     //Compile the shaders
     compileVertexShader(vertexShaderFilename);

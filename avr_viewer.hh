@@ -14,7 +14,7 @@ class AVRViewer
 public:
 	AVRViewer(GLFWwindow* _window);
 	void setupWindow();
-	void handleInput(int key, int scancode, int action, int mode);
+	virtual void handleInput(int key, int scancode, int action, int mode);
 	glm::mat4 projectionMatrix();
 	void runLoop();
 	void updatePointing(float deltaTime);	

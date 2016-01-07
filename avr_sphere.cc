@@ -56,10 +56,10 @@ void AVRSphere::setupSphere(){
 
 		}
 	}
-	for (int i=0; i<vertices.size()/5; i++) std::cout << "XXX   "
-	 << vertices[5*i+0] << "   " 
-	 << vertices[5*i+1] << "   " 
-	 << vertices[5*i+2] << std::endl;
+	// for (int i=0; i<vertices.size()/5; i++) std::cout << "XXX   "
+	//  << vertices[5*i+0] << "   " 
+	//  << vertices[5*i+1] << "   " 
+	//  << vertices[5*i+2] << std::endl;
 
 
     glBindVertexArray(vertexArrayObject);
@@ -93,6 +93,8 @@ AVRSphere::~AVRSphere()
 
 void AVRSphere::load(const char * filename)
 {
+
+	printf("Loading sphere texture %s\n", filename);
 
     setupSphere();
 
@@ -215,6 +217,7 @@ void AVRSphere::load(const char * filename)
 void AVRSphere::draw(glm::mat4 projection)
 {
     useProgram();
+    glBindTexture(GL_TEXTURE_2D, texture);
     checkGLerror("after useProgram");
 	
 	GLuint textureHandle = glGetUniformLocation(shaderProgram, "sphereTexture");
@@ -223,7 +226,7 @@ void AVRSphere::draw(glm::mat4 projection)
     sendMatrix("projection", projection);
     checkGLerror("after projection");
 
-    checkGLerror("after sphere");
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, 0);
+    checkGLerror("after sphere");
 
 }

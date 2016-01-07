@@ -188,8 +188,16 @@ void AVRViewer::runLoop() {
         
 
         // Draw each of our objects
+        int object_index=0;
         for (AVRObject * object : objects) {
-            object->draw(projection);
+           if (object->enabled) {
+                // std::cout << "Drawing " << object_index << std::endl;
+                object->draw(projection);
+            }
+            else{
+                // std::cout << "NOT DRAWING " << object_index << std::endl;
+            }
+            object_index++;
         }
         checkGLerror("after draw");
 
@@ -204,7 +212,7 @@ void AVRViewer::runLoop() {
         if (nframe%100==0){
 
             double fps = 1.0/seconds;
-            printf("FPS %f  = %d / %f\n", fps, nframe, seconds);
+            // printf("FPS %f  = %d / %f\n", fps, nframe, seconds);
         }
 
     }
