@@ -222,8 +222,16 @@ glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye) {
 	float scale_factor = 1.0f;
 	//glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(scale_factor, scale_factor, scale_factor));
 	glm::mat4 model;
-//	model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	glm::mat4 reflect = glm::mat4
+		(
+			-1.0, 0.0, 0.0, 0.0,
+			0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 1.0
+			);
+	model = reflect*model;
 	model *= scale_factor;
 	glm::mat4 projection_output = OVRToGLMat4(projection*view)*model;
 	return projection_output;
