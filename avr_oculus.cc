@@ -27,6 +27,7 @@ void avr_gl_errorcheck(const char * where)
 #pragma message("Removed GL error check")
 #pragma message("Removed GL error check")
 #pragma message("Removed GL error check")
+	return;
 	GLuint err = glGetError();
 	if (err != GL_NO_ERROR) {
 		const GLubyte* err_string = gluErrorString(err);
