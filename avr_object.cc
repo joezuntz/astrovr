@@ -5,6 +5,13 @@
 
 
 void checkGLerror(const char * where){
+#pragma message( "Skipping OpenGL checks" )
+#pragma message( "Skipping OpenGL checks" )
+#pragma message( "Skipping OpenGL checks" )
+#pragma message( "Skipping OpenGL checks" )
+#pragma message( "Skipping OpenGL checks" )
+#pragma message( "Skipping OpenGL checks" )
+	return;
    GLuint err = glGetError();
     if (err!=GL_NO_ERROR){
         const GLubyte* err_string = gluErrorString(err);

@@ -94,7 +94,6 @@ glm::mat4 makeMatrixFromPose(const ovrPosef& eyePose)
 
 void AVROculus::configureTextures()
 {
-	
 	ld.Header.Type = ovrLayerType_EyeFov;
 	ld.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;   // Because OpenGL.
 
@@ -128,17 +127,18 @@ void AVROculus::setup(HINSTANCE hinst)
 	if (!OVR_SUCCESS(result)) reportError("initializing");
 
 	hmdDesc = ovr_GetHmdDesc(hmd);
+	width = hmdDesc.Resolution.w/2;
+	height = hmdDesc.Resolution.h/2;
 
-	Platform.InitWindow(hinst, L"Oculus Room Tiny (GL)");
-	ovrSizei windowSize = { hmdDesc.Resolution.w / 2, hmdDesc.Resolution.h / 2 };
-	Platform.InitDevice(windowSize.w, windowSize.h, reinterpret_cast<LUID*>(&luid));
+	Platform.InitWindow(hinst, L"The Multi-Wavelength Universe");
+	Platform.InitDevice(width, height, reinterpret_cast<LUID*>(&luid));
+	glDisable(GL_CULL_FACE);
 
-	width = hmdDesc.Resolution.w;
-	height = hmdDesc.Resolution.h;
 
 	configureTextures();
 	configureEyes();
 	wglSwapIntervalEXT(0);
+
 
 }
 
@@ -211,6 +211,8 @@ void AVROculus::configureEyes(){
 }
 
 glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye) {
+	static float Yaw(3.141592f);
+
 	Matrix4f finalRollPitchYaw = Matrix4f(eyePoses[eye].Orientation);
 	Vector3f finalUp = finalRollPitchYaw.Transform(Vector3f(0, 1, 0));
 	Vector3f finalForward = finalRollPitchYaw.Transform(Vector3f(0, 0, -1));
@@ -218,8 +220,10 @@ glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye) {
 	Matrix4f view = Matrix4f::LookAtRH(shiftedEyePos, shiftedEyePos + finalForward, finalUp);
 	Matrix4f projection = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[eye], 0.2f, 100.0f, ovrProjection_RightHanded);
 	float scale_factor = 1.0f;
-	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(scale_factor, scale_factor, scale_factor));
+	//glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(scale_factor, scale_factor, scale_factor));
 	glm::mat4 model;
+//	model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	model *= scale_factor;
 	glm::mat4 projection_output = OVRToGLMat4(projection*view)*model;
 	return projection_output;
@@ -279,7 +283,7 @@ void AVROculus::renderEye(ovrEyeType eye){
     // Draw the scene here.
 
 	//Clear the scene
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//And draw the object(s).
@@ -318,6 +322,30 @@ void AVROculus::runLoop(){
     startTime = ovr_GetTimeInSeconds();
 
 	while (Platform.HandleMessages()){
+		int found_key = -1;
+		size_t n_sphere = objects.size();
+		if (n_sphere > 9) throw "Too many spheres";
+		for (int i = 0; i < n_sphere; i++) {
+			const char * keys = "1234567890";
+			char key = keys[i];
+			if (Platform.Key[key]) {
+				found_key = i;
+				break;
+			}
+		}
+		if (found_key >= 0) {
+			for (int i = 0; i < n_sphere; i++) {
+				AVRSphere * sphere = (AVRSphere*)objects[i];
+				if (i == found_key) {
+					sphere->alpha = 1.0f;
+				}
+				else {
+					sphere->alpha = 0.0f;
+				}
+
+			}
+
+		}
 
 		//Track the motion of the head
 		double           sensorSampleTime = ovr_GetTimeInSeconds();

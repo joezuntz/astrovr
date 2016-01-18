@@ -13,7 +13,7 @@
 
 #define TEXTURE_LOAD_ERROR 0
 
-AVRSphere::AVRSphere(double r) : radius(r) {
+AVRSphere::AVRSphere(double r) : radius(r), alpha(1.0f) {
 
 	glGenTextures(1, &texture);
     checkGLerror("generating texture");
@@ -65,10 +65,7 @@ void AVRSphere::setupSphere(){
 
 		}
 	}
-	for (unsigned int i=0; i<vertices.size()/5; i++) std::cout << "XXX   "
-	 << vertices[5*i+0] << "   " 
-	 << vertices[5*i+1] << "   " 
-	 << vertices[5*i+2] << std::endl;
+
 
 
     glBindVertexArray(vertexArrayObject);
@@ -245,12 +242,20 @@ void AVRSphere::load(const char * filename)
 
 void AVRSphere::draw(glm::mat4 projection)
 {
+	if (alpha <= 0.0f) return;
+
     useProgram();
     checkGLerror("after useProgram");
 	glBindTexture(GL_TEXTURE_2D, texture);
 
 	GLuint textureHandle = glGetUniformLocation(shaderProgram, "sphereTexture");
 	glUniform1i(textureHandle, 0);
+
+	GLuint alpha_handle = glGetUniformLocation(shaderProgram, "alpha");
+	checkGLerror("getting alpha handle");
+	glUniform1f(alpha_handle, alpha);
+	checkGLerror("setting alpha handle");
+
 
     sendMatrix("projection", projection);
     checkGLerror("after projection");

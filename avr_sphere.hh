@@ -8,6 +8,7 @@ class AVRSphere : public AVRObject
 {
 public:
     GLdouble radius;
+	GLfloat alpha;
 
     AVRSphere(double r);
     ~AVRSphere();
