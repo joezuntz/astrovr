@@ -20,6 +20,13 @@
 
 void avr_gl_errorcheck(const char * where)
 {
+#pragma message("Removed GL error check")
+#pragma message("Removed GL error check")
+#pragma message("Removed GL error check")
+#pragma message("Removed GL error check")
+#pragma message("Removed GL error check")
+#pragma message("Removed GL error check")
+#pragma message("Removed GL error check")
 	GLuint err = glGetError();
 	if (err != GL_NO_ERROR) {
 		const GLubyte* err_string = gluErrorString(err);
@@ -121,14 +128,33 @@ void AVROculus::configureTextures()
 
 }
 
+// Get the horizontal and vertical screen sizes in pixel
+void GetDesktopResolution(int& horizontal, int& vertical)
+{
+	RECT desktop;
+	// Get a handle to the desktop window
+	const HWND hDesktop = GetDesktopWindow();
+	// Get the size of screen to the variable desktop
+	GetWindowRect(hDesktop, &desktop);
+	// The top left corner will have coordinates (0,0)
+	// and the bottom right corner will have coordinates
+	// (horizontal, vertical)
+	horizontal = desktop.right;
+	vertical = desktop.bottom;
+}
+
+
 void AVROculus::setup(HINSTANCE hinst)
 {
 	ovrResult result = ovr_Create(&hmd, &luid);
 	if (!OVR_SUCCESS(result)) reportError("initializing");
 
 	hmdDesc = ovr_GetHmdDesc(hmd);
-	width = hmdDesc.Resolution.w/2;
-	height = hmdDesc.Resolution.h/2;
+
+	GetDesktopResolution(width, height);
+
+	//width = hmdDesc.Resolution.w/1.5;
+	//height = hmdDesc.Resolution.h/1.5;
 
 	Platform.InitWindow(hinst, L"The Multi-Wavelength Universe");
 	Platform.InitDevice(width, height, reinterpret_cast<LUID*>(&luid));
@@ -220,18 +246,18 @@ glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye) {
 	Matrix4f view = Matrix4f::LookAtRH(shiftedEyePos, shiftedEyePos + finalForward, finalUp);
 	Matrix4f projection = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[eye], 0.2f, 100.0f, ovrProjection_RightHanded);
 	float scale_factor = 1.0f;
-	//glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(scale_factor, scale_factor, scale_factor));
+
 	glm::mat4 model;
 	model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glm::mat4 reflect = glm::mat4
+	glm::mat4 reflectX = glm::mat4
 		(
 			-1.0, 0.0, 0.0, 0.0,
-			0.0, 1.0, 0.0, 0.0,
-			0.0, 0.0, 1.0, 0.0,
-			0.0, 0.0, 0.0, 1.0
+			 0.0, 1.0, 0.0, 0.0,
+			 0.0, 0.0, 1.0, 0.0,
+			 0.0, 0.0, 0.0, 1.0
 			);
-	model = reflect*model;
+	model = reflectX*model;
 	model *= scale_factor;
 	glm::mat4 projection_output = OVRToGLMat4(projection*view)*model;
 	return projection_output;
@@ -239,39 +265,6 @@ glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye) {
 }
 
 
-/*
-
-glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye){
-
-    ovrPosef pose = eyePoses[eye];
-    double timeSinceStart = ovr_GetTimeInSeconds() - startTime;
-    float rotationRate = 10.0f; // degrees persecond
-    float rotAngle = rotationRate * timeSinceStart;
-
-    // Model.  We just center it at zero    
-
-    glm::mat4 rot1 = glm::rotate(glm::mat4(), glm::radians(90.0f),   glm::vec3(0.0f, 0.0f, 1.0f));
-    glm::mat4 rot2 = glm::rotate(glm::mat4(), glm::radians(-90.0f),    glm::vec3(1.0f, 0.0f, 0.0f));
-    glm::mat4 rot3 = glm::rotate(glm::mat4(), glm::radians(rotAngle), glm::vec3(0.0f, 0.0f, 1.0f));
-    // glm::mat4 tran = glm::translate(glm::mat4(), glm::vec3(2.0f, 0.0f, 0.0f));
-    // glm::mat4 tran = glm::mat4();
-    float scale_factor = 10.0f;
-    glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(scale_factor,scale_factor,scale_factor));
-
-    glm::mat4 model = scl*rot2*rot1;
-
-
-    glm::mat4 view = glm::inverse(makeMatrixFromPose(pose));
-
-
-    ovrMatrix4f p1 = ovrMatrix4f_Projection(eyeDescriptors[eye].Fov,0.01f, 1000.0f, true);
-    glm::mat4 projection = OVRToGLMat4(p1);
-    projection = projection*view*model;
-    return projection;
-
-
-}
-*/
 
 void AVROculus::renderEye(ovrEyeType eye){
 
