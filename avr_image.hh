@@ -23,6 +23,7 @@ public:
     int original_width, int original_height,
     int desired_width, int desired_height
     );
+	virtual const char * objectName() { return "image"; };
 
     virtual void draw(glm::mat4 projection);
 };

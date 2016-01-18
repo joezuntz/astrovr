@@ -1,10 +1,12 @@
-#define GLM_FORCE_RADIANS
-// GLEW
-#define GLEW_STATIC
-#include <GL/glew.h>
+#include "avr_gl.Hh"
 
-// GLFW
-#include <GLFW/glfw3.h>
+//#define GLM_FORCE_RADIANS
+//// GLEW
+//#define GLEW_STATIC
+//#include <GL/glew.h>
+//
+//// GLFW
+//#include <GLFW/glfw3.h>
 #include "avr_catalog.hh"
 
 #include <iostream>
@@ -21,7 +23,7 @@ AVRCatalog::AVRCatalog()
 
 void AVRCatalog::push_point(float ra, float dec, float size, float d)
 {
-	float s, x, y, z, w;
+	float s, x, y, z;
 	ra = glm::radians(ra);
 	dec = glm::radians(dec);
 
@@ -123,7 +125,7 @@ void AVRCatalog::draw(glm::mat4 projection)
 
     useProgram();
     sendMatrix("projection", projection);    
-    glDrawArrays(GL_POINTS, 0, vertices.size());
+    glDrawArrays(GL_POINTS, 0, (GLsizei)vertices.size());
 
 }
 

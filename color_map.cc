@@ -1,5 +1,6 @@
 #include "color_map.hh"
 #include "math.h"
+#pragma warning(disable : 4244)
 
 ColorMap::ColorMap(float x_min, float x_max, bool is_log) :
  xmin(x_min), xmax(x_max), islog(is_log), xrange(xmax-xmin)
@@ -23,15 +24,15 @@ float base( float val ) {
 
 static
 float red( float gray ) {
-    return base( gray - 0.5 );
+    return (float) base( gray - 0.5 );
 }
 static
 float green( float gray ) {
-    return base( gray );
+    return (float)base( gray );
 }
 static
 float blue( float gray ) {
-    return base( gray + 0.5 );
+    return (float)base( gray + 0.5 );
 }
 
 JetColorMap::JetColorMap(float x_min, float x_max, bool is_log) : 

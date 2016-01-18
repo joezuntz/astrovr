@@ -19,7 +19,9 @@ protected:
     GLuint vertexBuffer;
     GLuint vertexShader;
     GLuint fragmentShader;
-    GLuint shaderProgram;    
+    GLuint shaderProgram;
+
+	bool visible;
 
     void push_triangle(glm::vec3 &p1, glm::vec3 &p2, glm::vec3 &p3, glm::vec4 &col, GLfloat scale);
     void sendMatrix(const char * name, glm::mat4 &M);
@@ -29,9 +31,12 @@ public:
 	void compileVertexShader(const char * filename);
 	void compileFragmentShader(const char * filename);
     void createProgram(const char * vertexShaderFilename, const char * fragmentShaderFilename);
+	void loadStandardShaderDirectory(const char * base_dir);
 
     virtual void useProgram();
-    virtual void draw(glm::mat4 projection)=0;
+	virtual const char * objectName() { return "object"; };
+	virtual void draw(glm::mat4 projection) = 0;
+	void drawIfVisible(glm::mat4 projection);
 };
 
 void checkGLerror(const char * where);    

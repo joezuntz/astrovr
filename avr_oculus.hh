@@ -1,40 +1,51 @@
 #include "avr_gl.hh"
-#include "FBO.h"
-#include "avr_test.hh"
-#include "avr_healpix.hh"
 #include "avr_sphere.hh"
 
-// #include "avr_object.hh"
+struct TextureBuffer;
+struct DepthBuffer;
 
 class AVROculus
 {
 public:
 
-	// The Head-Mounted Display
-	ovrHmd hmd;
+	// The Head-Mounted Display and related information
+	ovrSession hmd;
+	ovrHmdDesc hmdDesc;
     ovrPosef eyePoses[2];
-
-	GLFWwindow *window;
-	GLuint frameBuffer;
-	GLuint texture;
-	GLuint depthBuffer;
-    int width, height;
-    FBO eyeFBOs[2];
-    ovrGLTexture eyeTextures[2];
 	ovrEyeRenderDesc eyeDescriptors[2];
-	AVRHealpix * hmap;
-	AVRSphere * sphere;
+	ovrVector3f offset[2];
+
+
+
+	// The surfaces to which we render scenes
+	ovrGraphicsLuid luid;
+	TextureBuffer * eyeRenderTexture[2]; //contains the texture set pointers and other stuff
+	DepthBuffer   * eyeDepthBuffer[2];
+
+	// Layers - collections of textures - for each eye
+	ovrLayerEyeFov ld;
+
+	// The mirror texture used for the screen window
+	ovrGLTexture  * mirrorTexture;
+	GLuint          mirrorFBO = 0;
+
+	//The window?
+    int width, height;
+
+	//Things in the scene
+	std::vector<AVRObject*> objects;
+
     double startTime;
 
 
-
+	void renderMirror();
 	void reportError(const char * location);
-	void setup();
+	void setup(HINSTANCE hinst);
 	void runLoop();
-	void configureTexture();
-	void configureGLFW();
+	void configureTextures();
+	//void configureGLFW();
 	void configureEyes();	
 	void renderEye(ovrEyeType eye);
-	void setupHealpixMap(); //Temporary test method
+	//void setupHealpixMap(); //Temporary test method
 	glm::mat4 projectionMatrix(ovrEyeType eye);
 };

@@ -77,8 +77,8 @@ void AVRImage::enlargeTextureRBGPower2(std::vector<GLfloat> &pixels,
     embed_image.resize(3*desired_width*desired_height);
 
 
-    float vmax = -1e30;
-    for (int i=0; i<pixels.size(); i++) if (pixels[i]>vmax) vmax=pixels[i];
+    float vmax = -1e30f;
+    for (unsigned int i=0; i<pixels.size(); i++) if (pixels[i]>vmax) vmax=pixels[i];
 
     for (int i=0; i<original_width; i++){
         for (int j=0; j<original_height; j++){
@@ -153,11 +153,13 @@ void AVRImage::draw(glm::mat4 projection)
     checkGLerror("before draw");
 
     useProgram();
+	glBindTexture(GL_TEXTURE_2D, texture);
+
     checkGLerror("after useProgram");
     // glm::mat4 projection2;
     sendMatrix("projection", projection);
     checkGLerror("before drawarrays");
-    glDrawArrays(GL_TRIANGLES, 0, vertices.size()/7);
+    glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size()/7);
     checkGLerror("after drawarrays");
 
 }

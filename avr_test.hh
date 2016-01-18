@@ -11,6 +11,8 @@ public:
 
     AVRTest(float offset);
     virtual void draw(glm::mat4 projection);
+	virtual const char * objectName() { return "test"; };
+
 };
 
 

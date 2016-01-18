@@ -1,7 +1,7 @@
 #include "avr_gl.hh"
 #include <iostream>
 
-
+/*
 GLFWwindow*  avr_setup_window(int window_width, int window_height){
 
     glfwInit();
@@ -28,7 +28,7 @@ GLFWwindow*  avr_setup_window(int window_width, int window_height){
     // Init GLFW
     glfwMakeContextCurrent(window);
     glEnable (GL_DEPTH_TEST);
-    glEnable(GL_PROGRAM_POINT_SIZE_EXT);
+    glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_TEXTURE_2D);
 
     // Set the required callback functions
@@ -37,19 +37,21 @@ GLFWwindow*  avr_setup_window(int window_width, int window_height){
 
 
     // Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
-    glewExperimental = GL_TRUE;
-    // Initialize GLEW to setup the OpenGL Function pointers
-    if (glewInit() != GLEW_OK)
-    {
-        std::cerr << "Failed to initialize GLEW" << std::endl;
-        throw "Fail2";
-    }    
+    //glewExperimental = GL_TRUE;
+    //// Initialize GLEW to setup the OpenGL Function pointers
+    //if (glewInit() != GLEW_OK)
+    //{
+    //    std::cerr << "Failed to initialize GLEW" << std::endl;
+    //    throw "Fail2";
+    //}    
 
     //Apparently okay to ignore this.
     GLuint err = glGetError();
     if (err!=GL_NO_ERROR){
-        const GLubyte* err_string = gluErrorString(err);
+        gluErrorString(err);
     }
 
     return window;
 }
+
+*/

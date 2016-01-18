@@ -37,26 +37,26 @@ void AVRViewer::setupWindow(){
 
 
     // Create a GLFWwindow object that we can use for GLFW's functions
-    window = glfwCreateWindow(window_width, window_height, "Healpix Viewer", NULL, NULL);    
+    window = glfwCreateWindow(window_width, window_height, "AstroVR", NULL, NULL);    
 
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
-        throw "Fail";
+        throw "Failed to create window";
     }
 
     //
     glfwGetFramebufferSize(window, &buffer_width, &buffer_height);
     std::cout << "width = " << buffer_width << "  height = " << buffer_height << std::endl;
     
-    aspectRatio = buffer_width/buffer_height;
+    aspectRatio = (GLfloat) buffer_width/buffer_height;
 
 
     // Init GLFW
     glfwMakeContextCurrent(window);
     glEnable (GL_DEPTH_TEST);
-    glEnable(GL_PROGRAM_POINT_SIZE_EXT);
+    glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_TEXTURE_2D);
 
     // Set the required callback functions
@@ -65,18 +65,18 @@ void AVRViewer::setupWindow(){
 
 
     // Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
-    glewExperimental = GL_TRUE;
+ //   glewExperimental = GL_TRUE;
     // Initialize GLEW to setup the OpenGL Function pointers
-    if (glewInit() != GLEW_OK)
-    {
-        std::cerr << "Failed to initialize GLEW" << std::endl;
-        throw "Fail2";
-    }    
+   // if (glewInit() != GLEW_OK)
+   // {
+    //    std::cerr << "Failed to initialize GLEW" << std::endl;
+   //     throw "Fail2";
+   // }    
 
     //Apparently okay to ignore this.
     GLuint err = glGetError();
     if (err!=GL_NO_ERROR){
-        const GLubyte* err_string = gluErrorString(err);
+        gluErrorString(err);
     }
 
     // Define the viewport dimensions
@@ -90,8 +90,8 @@ void AVRViewer::setupWindow(){
 void AVRViewer::handleInput(int key, int scancode, int action, int mode){
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-    GLfloat cameraSpeed = 0.05f;
-    GLfloat ang = glm::radians(1.0f);
+    //GLfloat cameraSpeed = 0.05f;
+    //GLfloat ang = glm::radians(1.0f);
 
     if(key == GLFW_KEY_D){
         rotationalVelocity = rotationalVelocity + 0.1f*cameraUp;
@@ -120,10 +120,10 @@ void AVRViewer::handleInput(int key, int scancode, int action, int mode){
     }
 
     if(key == GLFW_KEY_R){
-        viewAngle*=1.1;
+        viewAngle*=1.1f;
     }
     if(key == GLFW_KEY_F){
-        viewAngle/=1.1;
+        viewAngle/=1.1f;
     }
 }
 

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "avr_fits.hh"
+#define cfitsio_EXPORTS
 #include "fitsio.h"
 
 void AVRFits::checkFitsStatus(int status, const char * location)

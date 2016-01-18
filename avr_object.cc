@@ -14,7 +14,7 @@ void checkGLerror(const char * where){
 }
 
 
-AVRObject::AVRObject() : vertexArrayObject(0), vertexBuffer(0) {
+AVRObject::AVRObject() : vertexArrayObject(0), vertexBuffer(0), visible(true) {
     // Generate a vertex array pointer, which
     // defines where on the GPU our data will be stored (I think)
     glGenVertexArrays(1, &vertexArrayObject);
@@ -159,4 +159,22 @@ void AVRObject::createProgram(const char * vertexShaderFilename, const char * fr
 void AVRObject::useProgram(){
     glBindVertexArray(vertexArrayObject);
     glUseProgram(shaderProgram);
+}
+
+void AVRObject::loadStandardShaderDirectory(const char * base_dir)
+{
+	char vertex_shader_file[1024];
+	char fragment_shader_file[1024];
+	const char * myName = objectName();
+	snprintf(vertex_shader_file, 1024, "%s\\shaders\\%s\\vertex.shader", base_dir, myName);
+	snprintf(fragment_shader_file, 1024, "%s\\shaders\\%s\\fragment.shader", base_dir, myName);
+	createProgram(vertex_shader_file, fragment_shader_file);
+
+}
+
+void AVRObject::drawIfVisible(glm::mat4 projection)
+{
+	if (visible) {
+		draw(projection);
+	}
 }

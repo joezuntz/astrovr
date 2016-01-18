@@ -19,7 +19,7 @@ public:
     int width, height; // of the texture image
     std::vector<GLushort> indices;
     GLuint elementBuffer;
-
+	virtual const char * objectName() { return "sphere"; };
 };
 
 

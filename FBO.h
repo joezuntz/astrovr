@@ -2,15 +2,17 @@
 #ifndef _FBO_H_
 #define _FBO_H_
 
-#if defined(_WIN32)
-#include <windows.h>
-#endif
+#include "avr_gl.hh"
 
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#else
-#include <GL/glu.h>
-#endif
+//#if defined(_WIN32)
+//#include <windows.h>
+//#endif
+//
+//#ifdef __APPLE__
+//#include <OpenGL/gl.h>
+//#else
+//#include <GL/glu.h>
+//#endif
 
 struct FBO {
     GLuint id, tex, depth;

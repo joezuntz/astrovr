@@ -1,6 +1,6 @@
 // FBO.cpp
 
-#include <OpenGL/gl.h>
+
 #include "FBO.h"
 #include <cstddef>
 

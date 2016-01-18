@@ -1,7 +1,16 @@
 #include "avr_sphere.hh"
+
+#ifdef _WIN32
+#include "avr_win_image.hh"
+#undef HAVE_UNISTD_H
+#else
 #include <png.h>
+#endif
+
 #include <iostream>
- 
+
+
+
 #define TEXTURE_LOAD_ERROR 0
 
 AVRSphere::AVRSphere(double r) : radius(r) {
@@ -56,7 +65,7 @@ void AVRSphere::setupSphere(){
 
 		}
 	}
-	for (int i=0; i<vertices.size()/5; i++) std::cout << "XXX   "
+	for (unsigned int i=0; i<vertices.size()/5; i++) std::cout << "XXX   "
 	 << vertices[5*i+0] << "   " 
 	 << vertices[5*i+1] << "   " 
 	 << vertices[5*i+2] << std::endl;
@@ -91,6 +100,28 @@ AVRSphere::~AVRSphere()
 	// delete the texture buffer here
 }
 
+
+#ifdef _WIN32
+void AVRSphere::load(const char * filename)
+{
+	setupSphere();
+
+	unsigned char * data;
+	unsigned int w, h;
+	avr_load_image_windows(filename, &data, &w, &h);
+
+	//lo
+
+	//Now generate the OpenGL texture object
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	checkGLerror("Loading image file");
+
+	delete[] data;
+
+}
+#else
 void AVRSphere::load(const char * filename)
 {
 
@@ -210,13 +241,14 @@ void AVRSphere::load(const char * filename)
 	delete[] row_pointers;
 	fclose(fp);
 }
-
+#endif
 
 void AVRSphere::draw(glm::mat4 projection)
 {
     useProgram();
     checkGLerror("after useProgram");
-	
+	glBindTexture(GL_TEXTURE_2D, texture);
+
 	GLuint textureHandle = glGetUniformLocation(shaderProgram, "sphereTexture");
 	glUniform1i(textureHandle, 0);
 
@@ -224,6 +256,6 @@ void AVRSphere::draw(glm::mat4 projection)
     checkGLerror("after projection");
 
     checkGLerror("after sphere");
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_TRIANGLES, (GLsizei) indices.size(), GL_UNSIGNED_SHORT, 0);
 
 }
