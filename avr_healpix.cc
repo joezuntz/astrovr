@@ -14,7 +14,7 @@ AVRHealpix::AVRHealpix(int ns, float r) :
     order = (int)log2(ns);
     nring = 4*ns-1;
     //Set color map elsewhere
-    color_map = new JetColorMap(0.1, 6.0, true);
+    color_map = new JetColorMap(0.1f, 6.0f, true);
 
     // Space for the indices of the vertices
     glGenBuffers(1, &elementBuffer);
@@ -35,8 +35,6 @@ void AVRHealpix::push_healpix_triangle(vec3 &p1, vec3 &p2, vec3 &p3, glm::vec4 &
 
 void AVRHealpix::computeCornerIndices(std::vector<vec3> &corners, std::vector<GLuint> &elements)
 {
-    int nring = 4*nside-1;
-    int npix = HP.Npix();
 
     //Top of the top ring - just the North Pole.
     //There are 4 pixels on the top row
@@ -175,7 +173,7 @@ void AVRHealpix::load(const char * filename)
 void AVRHealpix::draw(glm::mat4 projection)
 {
     useProgram();
-    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
+    //glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
     sendMatrix("projection", projection);    
     glDrawElements(GL_TRIANGLES, npix*6, GL_UNSIGNED_INT, 0);
 

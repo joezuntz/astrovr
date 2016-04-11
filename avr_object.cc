@@ -185,3 +185,8 @@ void AVRObject::drawIfVisible(glm::mat4 projection)
 		draw(projection);
 	}
 }
+
+void AVRObject::setAlpha(float a)
+{
+	// Default implementation does nothing
+}

@@ -264,3 +264,7 @@ void AVRSphere::draw(glm::mat4 projection)
     glDrawElements(GL_TRIANGLES, (GLsizei) indices.size(), GL_UNSIGNED_SHORT, 0);
 
 }
+
+void AVRSphere::setAlpha(float a) {
+	alpha = a;
+}

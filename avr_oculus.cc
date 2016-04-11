@@ -337,16 +337,14 @@ void AVROculus::runLoop(){
 		}
 		if (found_key >= 0) {
 			for (int i = 0; i < n_sphere; i++) {
-				AVRSphere * sphere = (AVRSphere*)objects[i];
+				AVRObject * obj = objects[i];
 				if (i == found_key) {
-					sphere->alpha = 1.0f;
+					obj->setAlpha(1.0f);
 				}
 				else {
-					sphere->alpha = 0.0f;
+					obj->setAlpha(0.0f);
 				}
-
 			}
-
 		}
 
 		//Track the motion of the head

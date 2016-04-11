@@ -33,6 +33,7 @@ public:
     void createProgram(const char * vertexShaderFilename, const char * fragmentShaderFilename);
 	void loadStandardShaderDirectory(const char * base_dir);
 
+	virtual void setAlpha(float a);
     virtual void useProgram();
 	virtual const char * objectName() { return "object"; };
 	virtual void draw(glm::mat4 projection) = 0;

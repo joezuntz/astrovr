@@ -21,6 +21,8 @@ public:
     std::vector<GLushort> indices;
     GLuint elementBuffer;
 	virtual const char * objectName() { return "sphere"; };
+	virtual void setAlpha(float a);
+
 };
 
 
