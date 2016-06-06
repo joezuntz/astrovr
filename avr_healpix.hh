@@ -24,15 +24,20 @@ public:
 
     // Map plotting information
     float radius;
+	float alpha;
     ColorMap * color_map;
     GLuint elementBuffer;
 
-    AVRHealpix(int nside, float r);
-    ~AVRHealpix();
+	AVRHealpix(int nside, float r);
+	AVRHealpix(int nside, float r, float vmin, float vmax, bool isLog);
+	AVRHealpix(int nside, float r, ColorMap * color_map);
+	~AVRHealpix();
     void load(const char * filename);
     void push_healpix_triangle(vec3 &p1, vec3 &p2, vec3 &p3, glm::vec4 &col, GLfloat scale);
     virtual void draw(glm::mat4 projection);
     void computeCornerIndices(std::vector<vec3> &corners, std::vector<GLuint> &elements);
+	virtual const char * objectName() { return "healpix"; };
+	virtual void setAlpha(float a);
 
 };
 

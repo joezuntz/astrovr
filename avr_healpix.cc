@@ -2,27 +2,63 @@
 #include "healpix_map_fitsio.h"
 
 
+AVRHealpix::AVRHealpix(int ns, float r, float vmin, float vmax, bool isLog) :
+lowResMap(ns, RING, SET_NSIDE),
+radius(r),
+nside(ns),
+alpha(1.0f),
+HP(ns, RING, SET_NSIDE)
+{
+	npix = HP.Npix();
+	order = (int)log2(ns);
+	nring = 4 * ns - 1;
+	//Set color map elsewhere
+	color_map = new JetColorMap(vmin, vmax, isLog);
+
+	// Space for the indices of the vertices
+	glGenBuffers(1, &elementBuffer);
+
+}
 
 
 AVRHealpix::AVRHealpix(int ns, float r) : 
     lowResMap(ns, RING, SET_NSIDE), 
     radius(r),
     nside(ns),
+	alpha(1.0f),
     HP(ns, RING, SET_NSIDE)
 {
     npix = HP.Npix();
     order = (int)log2(ns);
     nring = 4*ns-1;
     //Set color map elsewhere
-    color_map = new JetColorMap(0.1f, 6.0f, true);
+    color_map = new JetColorMap(-0.001f, 0.001f, false);
 
     // Space for the indices of the vertices
     glGenBuffers(1, &elementBuffer);
 
 }
 
+AVRHealpix::AVRHealpix(int ns, float r, ColorMap * cmap) :
+	lowResMap(ns, RING, SET_NSIDE),
+	radius(r),
+	nside(ns),
+	alpha(1.0f),
+	HP(ns, RING, SET_NSIDE),
+	color_map(cmap)
+
+{
+	npix = HP.Npix();
+	order = (int)log2(ns);
+	nring = 4 * ns - 1;
+
+	// Space for the indices of the vertices
+	glGenBuffers(1, &elementBuffer);
+
+}
+
 AVRHealpix::~AVRHealpix(){
-	delete color_map;
+//	delete color_map; //leaking memory.  Don't care.
 }
 
 void AVRHealpix::push_healpix_triangle(vec3 &p1, vec3 &p2, vec3 &p3, glm::vec4 &col, GLfloat scale)
@@ -43,6 +79,7 @@ void AVRHealpix::computeCornerIndices(std::vector<vec3> &corners, std::vector<GL
     bool shifted;
 
     HP.get_ring_info2(1, startpix, ringpix0, theta, shifted);
+	corners.reserve(npix);
 
     for (int p=startpix; p<startpix+ringpix0; p++){
         corners.push_back(vec3(0.0, 0.0, 1.0));
@@ -69,7 +106,7 @@ void AVRHealpix::computeCornerIndices(std::vector<vec3> &corners, std::vector<GL
     // }
 
 
-    
+		elements.reserve(6*npix);
 
     for (int i=0; i<npix; i++){
 
@@ -124,6 +161,8 @@ void AVRHealpix::load(const char * filename)
     std::vector<GLuint> elements;
     computeCornerIndices(corners, elements);
 
+	vertices.reserve(6 * corners.size());
+
     // We now want to send the top corners in along 
     //with the corresponding colors.  The remaining
     // corners we will send in using the element array
@@ -131,8 +170,8 @@ void AVRHealpix::load(const char * filename)
         // Top corner of pixel
         vec3 corner = corners[i];
         // Color of pixel
-        GLfloat rgb[3];
-        (*color_map)(lowResMap[i], rgb);
+		GLfloat rgb[3] = {0.0f, 0.0f, 0.0f};
+		(*color_map)(lowResMap[i], rgb);
 
         vertices.push_back(corner.x*radius);
         vertices.push_back(corner.y*radius);
@@ -172,9 +211,15 @@ void AVRHealpix::load(const char * filename)
 
 void AVRHealpix::draw(glm::mat4 projection)
 {
+	if (alpha <= 0.0f) return;
     useProgram();
     //glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
     sendMatrix("projection", projection);    
     glDrawElements(GL_TRIANGLES, npix*6, GL_UNSIGNED_INT, 0);
 
+}
+
+
+void AVRHealpix::setAlpha(float a) {
+	alpha = a;
 }

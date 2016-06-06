@@ -38,16 +38,23 @@ float blue( float gray ) {
 JetColorMap::JetColorMap(float x_min, float x_max, bool is_log) : 
 ColorMap(x_min, x_max, is_log) {};
 
+static float lin_norm(float x, float xmin, float xmax) {
+	return (x - xmin) / (xmax - xmin);
+}
+static float log_norm(float x, float xmin, float xmax) {
+	return (log(x) - log(xmin)) / (log(xmax) - log(xmin));
+}
+
 
 float JetColorMap::operator()(float x, float c[3]){
 	float v;
 	if (islog){
 		if (x<=xmin) x = xmin*1.0001;
 		if (x>xmax) x = xmax;
-		v = (log(x)-log(xmin))/(log(xmax)-log(xmin));
+		v = log_norm(x, xmin, xmax);
 	}
 	else {
-		v = (x-xmin)/xrange;
+		v = lin_norm(x, xmin, xmax);
 		if (v<0) v = 0.0;
 		if (v>1) v = 1.0;
 	}
@@ -55,5 +62,41 @@ float JetColorMap::operator()(float x, float c[3]){
 	c[1] = green(v);
 	c[2] = blue(v);
 	return 1.0;
+}
+
+PlanckColorMap::PlanckColorMap() :
+	JetColorMap(0.0f, 1.0f, false),
+	x1(-1e3f), x2(-1.0f), x3(1.0f), x4(1e7f),
+	y1(0.0f), y2(0.28f), y3(0.32f), y4(1.0f)
+{
+}
+
+float PlanckColorMap::operator()(float x, float c[3]) {
+	x *= 1e6;
+
+	if (x < x1) {
+		x = x1;
+	}
+	else if (x>x4) {
+		x = x4;
+	}
+
+	if ((x >= x1) && (x < x2)) {
+		x = 1-log_norm(-x, -x2, -x1);
+		x = y1 + x*(y2 - y1);
+	}
+	else if ((x >= x2) && (x < x3)) {
+		x = lin_norm(x, x2, x3);
+		x = y2 + x*(y3 - y2);
+	}
+	else if ((x >= x3) && (x <= x4)) {
+		x = log_norm(x, x3, x4);
+		x = y3 + x*(y4 - y3);
+	}
+	else {
+		// nan. return mid point. or something.
+		x = 0.3f;
+	}
+	return JetColorMap::operator()(x, c);
 }
 
