@@ -5,13 +5,8 @@
 
 
 void checkGLerror(const char * where){
-#pragma message( "Skipping OpenGL checks" )
-#pragma message( "Skipping OpenGL checks" )
-#pragma message( "Skipping OpenGL checks" )
-#pragma message( "Skipping OpenGL checks" )
-#pragma message( "Skipping OpenGL checks" )
-#pragma message( "Skipping OpenGL checks" )
-	return;
+//#pragma message( "Skipping OpenGL checks" )
+//	return;
    GLuint err = glGetError();
     if (err!=GL_NO_ERROR){
         const GLubyte* err_string = gluErrorString(err);
@@ -121,11 +116,18 @@ GLuint AVRObject::compileShader(const char * filename, GLuint shaderType){
     return shader;
 }
 
+void AVRObject::sendScalar(const char * name, GLfloat x) {
+	GLuint handle = glGetUniformLocation(shaderProgram, name);
+	checkGLerror("getting shader scalar handle");
+	glUniform1f(handle, x);
+	checkGLerror("setting alpha handle");
+}
+
 
 
 void AVRObject::sendMatrix(const char * name, glm::mat4 &M){
     GLuint handle = glGetUniformLocation(shaderProgram, name);
-    checkGLerror("getting shader handle");
+    checkGLerror("getting shader matrix handle");
     glUniformMatrix4fv(handle, 1, GL_FALSE, glm::value_ptr(M));
     checkGLerror(name);
 }

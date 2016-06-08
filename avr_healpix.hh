@@ -16,11 +16,15 @@ public:
     int npix;
     int nring;
 
+	int frameCount; // approx frame count - just for updating rotation
+	double latitude, longitude;
+
     // Map data
     Healpix_Map<double> fullResMap;
     Healpix_Map<double> lowResMap;
     Healpix_Base HP;
 
+	glm::mat4 skyRotation;
 
     // Map plotting information
     float radius;
@@ -38,7 +42,8 @@ public:
     void computeCornerIndices(std::vector<vec3> &corners, std::vector<GLuint> &elements);
 	virtual const char * objectName() { return "healpix"; };
 	virtual void setAlpha(float a);
-
+	void computeSkyRotation();
+	double getLocalHourAngle(double LongtitudeAsHourAngle, double ra);
 };
 
 

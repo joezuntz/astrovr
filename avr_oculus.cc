@@ -21,12 +21,6 @@
 void avr_gl_errorcheck(const char * where)
 {
 #pragma message("Removed GL error check")
-#pragma message("Removed GL error check")
-#pragma message("Removed GL error check")
-#pragma message("Removed GL error check")
-#pragma message("Removed GL error check")
-#pragma message("Removed GL error check")
-#pragma message("Removed GL error check")
 	return;
 	GLuint err = glGetError();
 	if (err != GL_NO_ERROR) {
@@ -46,7 +40,7 @@ void AVROculus::reportError(const char * location)
 	ovr_GetLastErrorInfo(&errorInfo);
 	const char * message = errorInfo.ErrorString;
 	std::cerr << "Oculus error while " << location << " : " << message << std::endl;
-	throw message;
+	throw location;
 
 }
 
@@ -145,7 +139,7 @@ void GetDesktopResolution(int& horizontal, int& vertical)
 }
 
 
-void AVROculus::setup(HINSTANCE hinst)
+void AVROculus::setup(HINSTANCE hinst, const wchar_t * windowTitle)
 {
 	ovrResult result = ovr_Create(&hmd, &luid);
 	if (!OVR_SUCCESS(result)) reportError("initializing");
@@ -154,12 +148,17 @@ void AVROculus::setup(HINSTANCE hinst)
 
 	GetDesktopResolution(width, height);
 
-	//width = hmdDesc.Resolution.w/1.5;
-	//height = hmdDesc.Resolution.h/1.5;
-
-	Platform.InitWindow(hinst, L"The Multi-Wavelength Universe");
+	Platform.InitWindow(hinst, windowTitle);
 	Platform.InitDevice(width, height, reinterpret_cast<LUID*>(&luid));
 	glDisable(GL_CULL_FACE);
+	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_PROGRAM_POINT_SIZE);
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glBlendFunc(GL_ONE, GL_ONE);
+	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+	checkGLerror("Enable");
 
 
 	configureTextures();
@@ -171,57 +170,6 @@ void AVROculus::setup(HINSTANCE hinst)
 
 
 
-/*
-void AVROculus::setup()
-{
-
-	ovrResult result = ovr_Initialize(nullptr);
-	if (!OVR_SUCCESS(result)) reportError("initializing");
-
-
-	result = ovr_Create(&hmd, &luid);
-	if (!OVR_SUCCESS(result)) reportError("initializing");
-
-	hmdDesc = ovr_GetHmdDesc(hmd);
-
-
-    if (!hmd) reportError("creating the headset");
-    std::cout << "Detected Oculus!" << std::endl << "ProductName: " << hmdDesc.ProductName << std::endl;
-    std::cout << "Manufacturer: "  << hmdDesc.Manufacturer << std::endl;
-
-    width = hmdDesc.Resolution.w;
-    height = hmdDesc.Resolution.h;
-
-
-
-    // Now we can enable head tracking.
-    unsigned int trackMode = ovrTrackingCap_Orientation
-                           | ovrTrackingCap_MagYawCorrection
-                           | ovrTrackingCap_Position;
-
-    result = ovr_ConfigureTracking(hmd, trackMode, 0);
-	if (!OVR_SUCCESS(result)) reportError("getting track mode");
-
-
-
-    configureGLFW();
-
-	eyeDescriptors[0] = ovr_GetRenderDesc(hmd, ovrEye_Left, hmdDesc.DefaultEyeFov[0]);
-	eyeDescriptors[1] = ovr_GetRenderDesc(hmd, ovrEye_Right, hmdDesc.DefaultEyeFov[1]);
-
-
-    std::cout << "rendering configured." <<std::endl;
-
-    avr_gl_errorcheck("setting up objects");
-    configureTextures();
-    avr_gl_errorcheck("texture");
-    configureEyes(); //connect the eyes to the texture
-    avr_gl_errorcheck("eyes");
-
-
-
-}
-*/
 
 
 void AVROculus::configureEyes(){
@@ -248,18 +196,7 @@ glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye) {
 	Matrix4f projection = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[eye], 0.2f, 100.0f, ovrProjection_RightHanded);
 	float scale_factor = 1.0f;
 
-	glm::mat4 model;
-	model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glm::mat4 reflectX = glm::mat4
-		(
-			-1.0, 0.0, 0.0, 0.0,
-			 0.0, 1.0, 0.0, 0.0,
-			 0.0, 0.0, 1.0, 0.0,
-			 0.0, 0.0, 0.0, 1.0
-			);
-	model = reflectX*model;
-	model *= scale_factor;
+	glm::mat4 model = fixedTransform*scale_factor;
 	glm::mat4 projection_output = OVRToGLMat4(projection*view)*model;
 	return projection_output;
 
@@ -322,8 +259,13 @@ void AVROculus::runLoop(){
 
 
     startTime = ovr_GetTimeInSeconds();
+	int currentObjectIndex = 0;
+	int targetObjectIndex = 0;
+	float fadeTime = 0.75f;
+	float fadeStartTime = 0.0f;
 
 	while (Platform.HandleMessages()){
+		double           sensorSampleTime = ovr_GetTimeInSeconds();
 		int found_key = -1;
 		size_t n_sphere = objects.size();
 		if (n_sphere > 9) throw "Too many spheres";
@@ -335,20 +277,47 @@ void AVROculus::runLoop(){
 				break;
 			}
 		}
-		if (found_key >= 0) {
+		//ignore flips during transition
+		if (found_key >= 0 && (currentObjectIndex == targetObjectIndex)) {
 			for (int i = 0; i < n_sphere; i++) {
-				AVRObject * obj = objects[i];
 				if (i == found_key) {
-					obj->setAlpha(1.0f);
-				}
-				else {
-					obj->setAlpha(0.0f);
+					targetObjectIndex = i;
+					fadeStartTime = sensorSampleTime;
 				}
 			}
 		}
 
+		//Blank out all the objects to start with.
+		for (int i = 0; i < n_sphere; i++) {
+			AVRObject * obj = objects[i];
+			obj->setAlpha(0.0f);
+		}
+
+		float timeSinceFadeStart = sensorSampleTime - fadeStartTime;
+		AVRObject * currentObject = objects[currentObjectIndex];
+		AVRObject * targetObject = objects[targetObjectIndex];
+
+		if (currentObjectIndex == targetObjectIndex) {
+			//fade complete, one object
+			currentObject->setAlpha(1.0f);
+		}
+		else {
+			float phase = timeSinceFadeStart / fadeTime;
+		
+			if (phase>1.0f){
+			//fade just finished.
+				targetObject->setAlpha(1.0f);
+				currentObjectIndex = targetObjectIndex;	
+			}
+			else {
+				//Fading part way between
+				currentObject->setAlpha(1.0f-phase);
+				targetObject->setAlpha(phase);
+			}
+		}
+
+
 		//Track the motion of the head
-		double           sensorSampleTime = ovr_GetTimeInSeconds();
 		double           ftiming = ovr_GetPredictedDisplayTime(hmd, 0);
 		ovrTrackingState tracking = ovr_GetTrackingState(hmd, ftiming, ovrTrue);
 

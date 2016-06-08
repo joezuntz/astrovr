@@ -40,7 +40,7 @@ public:
 
 	void renderMirror();
 	void reportError(const char * location);
-	void setup(HINSTANCE hinst);
+	void setup(HINSTANCE hinst, const wchar_t * windowTitle);
 	void runLoop();
 	void configureTextures();
 	//void configureGLFW();
@@ -48,4 +48,6 @@ public:
 	void renderEye(ovrEyeType eye);
 	//void setupHealpixMap(); //Temporary test method
 	glm::mat4 projectionMatrix(ovrEyeType eye);
+	glm::mat4 fixedTransform;
 };
+

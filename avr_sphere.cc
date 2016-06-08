@@ -42,9 +42,9 @@ void AVRSphere::setupSphere(){
 
 	for(int r = 0; r < rings; r++){
 		for(int s = 0; s < sectors; s++) {
-			float y = sin( -M_PI_2 + M_PI * r * R );
-			float x = cos(2*M_PI * s * S) * sin( M_PI * r * R );
-			float z = sin(2*M_PI * s * S) * sin( M_PI * r * R );
+			float y = radius * sin( -M_PI_2 + M_PI * r * R );
+			float x = radius * cos(2*M_PI * s * S) * sin( M_PI * r * R );
+			float z = radius * sin(2*M_PI * s * S) * sin( M_PI * r * R );
 
 			float u = s*S;
 			float v = r*R;

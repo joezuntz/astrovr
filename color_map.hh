@@ -19,16 +19,25 @@ class JetColorMap : public ColorMap {
 	float operator()(float x, float c[3]);
 };
 
-class PlanckColorMap : public JetColorMap {
+class PlanckColorMap : public ColorMap {
+	float R[256];
+	float G[256];
+	float B[256];
+	public:
+		PlanckColorMap(const char * filename);
+		float operator()(float x, float c[3]);
+
+};
+
+class PlanckBrokenColorMap : public PlanckColorMap {
 	float x1, x2, x3, x4;
 	float y1, y2, y3, y4;
 	float x1range;
 	float x2range;
 	float x3range;
+	float scaling;
 
 	public: 
-	PlanckColorMap();
+	PlanckBrokenColorMap(const char * filename, float scale);
 	float operator()(float x, float c[3]);
-
-
 };

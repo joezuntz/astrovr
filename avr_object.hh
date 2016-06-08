@@ -24,8 +24,9 @@ protected:
 	bool visible;
 
     void push_triangle(glm::vec3 &p1, glm::vec3 &p2, glm::vec3 &p3, glm::vec4 &col, GLfloat scale);
-    void sendMatrix(const char * name, glm::mat4 &M);
-    GLuint compileShader(const char * filename, GLuint shaderType);
+	void sendMatrix(const char * name, glm::mat4 &M);
+	void sendScalar(const char * name, GLfloat x);
+	GLuint compileShader(const char * filename, GLuint shaderType);
 
 public:
 	void compileVertexShader(const char * filename);

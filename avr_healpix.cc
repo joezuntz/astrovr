@@ -1,12 +1,19 @@
 #include "avr_healpix.hh"
 #include "healpix_map_fitsio.h"
-
+#include "AADate.h"
+#include "AACoordinateTransformation.h"
+#include "AASidereal.h"
+#include <ctime>
 
 AVRHealpix::AVRHealpix(int ns, float r, float vmin, float vmax, bool isLog) :
 lowResMap(ns, RING, SET_NSIDE),
 radius(r),
 nside(ns),
 alpha(1.0f),
+frameCount(0),
+skyRotation(),
+latitude(0.0),
+longitude(0.0),
 HP(ns, RING, SET_NSIDE)
 {
 	npix = HP.Npix();
@@ -26,6 +33,10 @@ AVRHealpix::AVRHealpix(int ns, float r) :
     radius(r),
     nside(ns),
 	alpha(1.0f),
+	frameCount(0),
+	skyRotation(),
+	latitude(0.0),
+	longitude(0.0),
     HP(ns, RING, SET_NSIDE)
 {
     npix = HP.Npix();
@@ -44,6 +55,10 @@ AVRHealpix::AVRHealpix(int ns, float r, ColorMap * cmap) :
 	radius(r),
 	nside(ns),
 	alpha(1.0f),
+	frameCount(0),
+	skyRotation(),
+	latitude(0.0),
+	longitude(0.0),
 	HP(ns, RING, SET_NSIDE),
 	color_map(cmap)
 
@@ -209,13 +224,79 @@ void AVRHealpix::load(const char * filename)
 
 }
 
+double AVRHealpix::getLocalHourAngle(double LongtitudeAsHourAngle, double ra)
+{
+	time_t timeStamp;
+	time(&timeStamp);
+
+	// Get Greenwich Mean Time
+	struct tm * utc = gmtime(&timeStamp);
+
+	// Get Julian Day
+	CAADate dateCalculator(
+		(long)utc->tm_year + 1900,
+		(long)utc->tm_mon + 1,
+		(double)utc->tm_mday,
+		(double)utc->tm_hour,
+		(double)utc->tm_min,
+		(double)utc->tm_sec,
+		true);
+
+	double jd = dateCalculator.Julian();
+
+	// Get the sidereal time.
+	double AST = CAASidereal::ApparentGreenwichSiderealTime(jd);
+	double LocalHourAngle = AST - LongtitudeAsHourAngle - ra;
+	return LocalHourAngle;
+
+}
+
+void AVRHealpix::computeSkyRotation()
+{
+	if (frameCount%120 == 0) {		
+		// RA and Dec of the North Galactic Pole
+		double ra = CAACoordinateTransformation::DegreesToRadians(192.875);
+		double dec = CAACoordinateTransformation::DegreesToRadians(27.4);
+
+		// Get Greenwich mean time (UTC)
+		double ha = getLocalHourAngle(longitude, ra);
+
+		// Convert that ra, dec vector to azimuth and elevation, in radians
+		CAA2DCoordinate azel = CAACoordinateTransformation::Equatorial2Horizontal(ha, dec, latitude);
+		azel.X = CAACoordinateTransformation::DegreesToRadians(azel.X);
+		azel.Y = CAACoordinateTransformation::DegreesToRadians(azel.Y);
+
+		//convert az el to cartesian
+		float ngp_x = cos(azel.Y) * cos(azel.X);
+		float ngp_y = cos(azel.Y) * sin(azel.X);
+		float ngp_z = sin(azel.Y);
+
+		// take the cross product of up and the az,el vector to find the rotation axis
+		glm::vec3 axis(ngp_y, -ngp_x, 0.0f);
+		// take the dot product of the up and azel vectors to find the rotation angle
+		float angle = acos(ngp_z);
+
+		// set skyRotation to that using glm::rotate
+		glm::mat4 identity;
+		skyRotation = glm::rotate(identity, angle, axis);
+
+	}
+	frameCount++;
+	//update this every 120 frames, 2 seconds. Overkill as the rotation is negligible in that time.
+}
+
 void AVRHealpix::draw(glm::mat4 projection)
 {
 	if (alpha <= 0.0f) return;
     useProgram();
+
+	computeSkyRotation();
     //glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
-    sendMatrix("projection", projection);    
-    glDrawElements(GL_TRIANGLES, npix*6, GL_UNSIGNED_INT, 0);
+	glm::mat4 projectionAndRotation = projection*skyRotation;
+	sendMatrix("projection", projectionAndRotation);
+	sendScalar("alpha", alpha);
+
+	glDrawElements(GL_TRIANGLES, npix*6, GL_UNSIGNED_INT, 0);
 
 }
 

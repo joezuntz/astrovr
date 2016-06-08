@@ -1,5 +1,6 @@
 #include "color_map.hh"
 #include "math.h"
+#include <stdio.h>
 #pragma warning(disable : 4244)
 
 ColorMap::ColorMap(float x_min, float x_max, bool is_log) :
@@ -64,15 +65,48 @@ float JetColorMap::operator()(float x, float c[3]){
 	return 1.0;
 }
 
-PlanckColorMap::PlanckColorMap() :
-	JetColorMap(0.0f, 1.0f, false),
+PlanckColorMap::PlanckColorMap(const char * filename) :
+ColorMap(0.0f, 1.0f, false)
+{
+	//Open the file and read each of the lines.
+	//Make three interpolators in r, g,b
+	FILE * f = fopen(filename, "r");
+	for (int i = 0; i < 256; i++) {
+		float x, r, g, b;
+		fscanf(f, "%f  %f  %f  %f\n", &x, &r, &g, &b);
+		R[i] = r/256.0;
+		G[i] = g / 256.0;
+		B[i] = b / 256.0;
+	}
+	fclose(f);
+}
+
+
+
+float PlanckColorMap::operator()(float x, float c[3]) {
+	//Interpolate in r,g,b
+	if (!isfinite(x)) x = 0.5f;
+	int i = (int)(x * 256.0);
+	if (i < 0) i = 0;
+	if (i > 255) i = 255;
+	c[0] = R[i];
+	c[1] = G[i];
+	c[2] = B[i];
+	return 1.0;
+}
+
+
+
+PlanckBrokenColorMap::PlanckBrokenColorMap(const char * filename, float scale) :
+	PlanckColorMap(filename),
 	x1(-1e3f), x2(-1.0f), x3(1.0f), x4(1e7f),
-	y1(0.0f), y2(0.28f), y3(0.32f), y4(1.0f)
+	y1(0.0f), y2(0.28f), y3(0.32f), y4(1.0f),
+	scaling(scale)
 {
 }
 
-float PlanckColorMap::operator()(float x, float c[3]) {
-	x *= 1e6;
+float PlanckBrokenColorMap::operator()(float x, float c[3]) {
+	x *= scaling;
 
 	if (x < x1) {
 		x = x1;
@@ -97,6 +131,6 @@ float PlanckColorMap::operator()(float x, float c[3]) {
 		// nan. return mid point. or something.
 		x = 0.3f;
 	}
-	return JetColorMap::operator()(x, c);
+	return PlanckColorMap::operator()(x, c);
 }
 
