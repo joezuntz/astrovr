@@ -1,3 +1,7 @@
+#pragma once
+#include "stdafx.h"
+
+
 #ifndef _H_AVR_GL
 #define _H_AVR_GL
 

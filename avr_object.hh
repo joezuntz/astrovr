@@ -1,3 +1,6 @@
+#pragma once
+#include "stdafx.h"
+
 #ifdef _H_AVR_OBJECT
 #else
 #define _H_AVR_OBJECT

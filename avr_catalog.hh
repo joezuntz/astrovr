@@ -1,3 +1,7 @@
+#pragma once
+#include "stdafx.h"
+
+
 #ifdef _H_AVR_CATALOG
 #else
 #define _H_AVR_CATALOG

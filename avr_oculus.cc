@@ -15,6 +15,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+
+#include "avr_oculus_timeline.h"
+#include "avr_soundplayer.h"
 
 
 
@@ -196,7 +200,7 @@ glm::mat4 AVROculus::projectionMatrix(ovrEyeType eye) {
 	Matrix4f projection = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[eye], 0.2f, 100.0f, ovrProjection_RightHanded);
 	float scale_factor = 1.0f;
 
-	glm::mat4 model = fixedTransform*scale_factor;
+	glm::mat4 model = scale_factor*additionalRotation*additionalTranslation*fixedTransform;
 	glm::mat4 projection_output = OVRToGLMat4(projection*view)*model;
 	return projection_output;
 
@@ -253,69 +257,215 @@ void AVROculus::renderMirror() {
 
 }
 
+void AVROculus::updateAlpha() {
+	size_t n_sphere = objects.size();
+	double           sensorSampleTime = ovr_GetTimeInSeconds();
 
-void AVROculus::runLoop(){
+	//Blank out all the objects to start with.
+	for (int i = 0; i < n_sphere; i++) {
+		AVRObject * obj = objects[i];
+		obj->setAlpha(0.0f);
+	}
 
+	float timeSinceFadeStart = sensorSampleTime - fadeStartTime;
+	AVRObject * currentObject = objects[currentObjectIndex];
+	AVRObject * targetObject = objects[targetObjectIndex];
 
+	if (currentObjectIndex == targetObjectIndex) {
+		//fade complete, one object
+		currentObject->setAlpha(1.0f);
+	}
+	else {
+		float phase = timeSinceFadeStart / fadeTime;
 
-    startTime = ovr_GetTimeInSeconds();
-	int currentObjectIndex = 0;
-	int targetObjectIndex = 0;
-	float fadeTime = 0.75f;
-	float fadeStartTime = 0.0f;
-
-	while (Platform.HandleMessages()){
-		double           sensorSampleTime = ovr_GetTimeInSeconds();
-		int found_key = -1;
-		size_t n_sphere = objects.size();
-		if (n_sphere > 9) throw "Too many spheres";
-		for (int i = 0; i < n_sphere; i++) {
-			const char * keys = "1234567890";
-			char key = keys[i];
-			if (Platform.Key[key]) {
-				found_key = i;
-				break;
-			}
-		}
-		//ignore flips during transition
-		if (found_key >= 0 && (currentObjectIndex == targetObjectIndex)) {
-			for (int i = 0; i < n_sphere; i++) {
-				if (i == found_key) {
-					targetObjectIndex = i;
-					fadeStartTime = sensorSampleTime;
-				}
-			}
-		}
-
-		//Blank out all the objects to start with.
-		for (int i = 0; i < n_sphere; i++) {
-			AVRObject * obj = objects[i];
-			obj->setAlpha(0.0f);
-		}
-
-		float timeSinceFadeStart = sensorSampleTime - fadeStartTime;
-		AVRObject * currentObject = objects[currentObjectIndex];
-		AVRObject * targetObject = objects[targetObjectIndex];
-
-		if (currentObjectIndex == targetObjectIndex) {
-			//fade complete, one object
-			currentObject->setAlpha(1.0f);
+		if (phase>1.0f) {
+			//fade just finished.
+			targetObject->setAlpha(1.0f);
+			currentObjectIndex = targetObjectIndex;
 		}
 		else {
-			float phase = timeSinceFadeStart / fadeTime;
-		
-			if (phase>1.0f){
-			//fade just finished.
-				targetObject->setAlpha(1.0f);
-				currentObjectIndex = targetObjectIndex;	
-			}
-			else {
-				//Fading part way between
-				currentObject->setAlpha(1.0f-phase);
-				targetObject->setAlpha(phase);
-			}
+			//Fading part way between
+			currentObject->setAlpha(1.0f - phase);
+			targetObject->setAlpha(phase);
+		}
+	}
+
+
+	if (areWeTranslating) {
+		float f = (sensorSampleTime - translationStartTime) / (translationEndTime - translationStartTime);
+		if (f > 1.0f) {
+			previousPosition = targetPosition;
+			areWeTranslating = 0;
+		}
+		else {
+			float g = sinf(f * M_PI_2);
+			glm::vec3 currentPosition = previousPosition + g * (targetPosition - previousPosition);
+			additionalTranslation = glm::translate(glm::mat4(1.f), currentPosition);
+
 		}
 
+	}
+
+
+	if (areWeRotating) {
+		float f = (sensorSampleTime - rotationStartTime) / (rotationEndTime - rotationStartTime);
+		if (f < 0) f = 0;
+		if (f > 1.0f) {
+			previousRotation = targetRotation;
+			areWeRotating = 0;
+		}
+		else {
+			float g = sinf(f * M_PI_2);
+			glm::vec3 z0 = glm::vec3(-1.0f, 0.0f, 0.0f);
+
+			glm::vec3 rotationAxis1 = glm::cross(previousRotation, targetRotation);
+			rotationAxis1 /= glm::length(rotationAxis1);
+			float angl1 = g * acos(glm::dot(previousRotation, targetRotation));
+			glm::vec3 currentRotation = glm::rotate(previousRotation, angl1, rotationAxis1);
+
+
+			float finalRotationAngle = acos(glm::dot(currentRotation, z0));
+			glm::vec3 rotationAxis = glm::cross(z0, currentRotation);
+			if (z0 == currentRotation) {
+				additionalRotation = glm::mat4(1.f);
+
+			}
+			else {
+				additionalRotation = glm::rotate(glm::mat4(1.f), finalRotationAngle, rotationAxis);
+
+			}
+
+		}
+
+	}
+
+
+	//glm::vec3 position_shift = glm::vec3(0.0f, 0.0f, 0.0f);
+	//glm::mat4 translate = glm::translate(glm::mat4(1.f), position_shift);
+	//model = model*translate;
+}
+
+void AVROculus::translateTo(double x, double y, double z)
+{
+	double currentTime = ovr_GetTimeInSeconds();
+
+	targetPosition = glm::vec3(-x,-y,-z);
+
+
+	translationStartTime = currentTime;
+	translationEndTime = currentTime + 0.5f;
+	areWeTranslating = 1;
+
+
+}
+void AVROculus::transitionTo(int i) {
+	targetObjectIndex = i-1;
+	fadeStartTime = ovr_GetTimeInSeconds();
+
+}
+void AVROculus::rotateTo(double lat, double lon) {
+
+	double currentTime = ovr_GetTimeInSeconds();
+	double x = -cos(lon) * cos(lat);
+	double y = -sin(lat);
+	double z = -cos(lat)*sin(lon);
+
+	targetRotation = glm::vec3(x, y, z);
+	rotationStartTime = currentTime;
+	rotationEndTime = currentTime + 0.5f;
+	areWeRotating= 1;
+
+
+}
+
+
+void AVROculus::manualInput() {
+
+	double sensorSampleTime = ovr_GetTimeInSeconds();
+
+	int found_key = -1;
+	size_t n_sphere = objects.size();
+	if (n_sphere > 9) throw "Too many spheres";
+	for (int i = 0; i < n_sphere; i++) {
+		const char * keys = "1234567890";
+		char key = keys[i];
+		if (Platform.Key[key]) {
+			found_key = i;
+			break;
+		}
+	}
+	//ignore flips during transition
+	if (found_key >= 0 && (currentObjectIndex == targetObjectIndex)) {
+		for (int i = 0; i < n_sphere; i++) {
+			if (i == found_key) {
+				targetObjectIndex = i;
+				fadeStartTime = sensorSampleTime;
+			}
+		}
+	}
+
+	if (found_key == -1) {
+		if (Platform.Key['P']) {
+			startTour(MULTIWAVELENGTH_LONG_TOUR);
+		}
+	}
+
+}
+
+void AVROculus::startTour(int tour_id) {
+	if (running_tour) return; //skip if already running
+	if (tour_id==MULTIWAVELENGTH_LONG_TOUR) {
+		tour_timeline = createLongTourTimeline(this);
+		player = new AVRSoundPlayer(L"C:\\Users\\Joe Zuntz\\Music\\oculucfulltourwithmusicmono.wav");
+		player->play();
+	}
+	// CAN ADD OTHER TOURS I HERE WITH DIFFERENT TIMELINES AND SOUND FILES
+
+	else {//nothing to do
+		delete tour_timeline;
+		delete player;
+		tour_timeline = nullptr;
+		player = nullptr;
+	}
+	running_tour = tour_id;
+
+}
+
+void AVROculus::finishTour() {
+	running_tour = MULTIWAVELENGTH_FREE; // == 0
+	delete tour_timeline;
+	tour_timeline = nullptr;
+}
+
+
+void AVROculus::runLoop(int tour){
+	running_tour = 0;
+	player = nullptr;
+
+	// The sound that gets played is hard-coded in the avr_soundplayer.cpp file.
+
+	startTour(tour); // may be nothing, empty tour ("FREE")
+
+	startTime = ovr_GetTimeInSeconds();
+	currentObjectIndex = 2;
+	targetObjectIndex = 2;
+	fadeStartTime = 0.0f;
+	fadeTime = 0.75f;
+	previousPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+	previousRotation = glm::vec3(-1.0f, 0.0f, 0.0f);
+	additionalTranslation = glm::mat4(1.f);
+	additionalRotation = glm::mat4(1.f);
+
+	while (Platform.HandleMessages()){
+		double currentTime = ovr_GetTimeInSeconds();
+		if (running_tour>0) {
+			tour_timeline->check_for_event(currentTime - startTime);
+		}
+		else {
+			manualInput();
+		}
+
+		updateAlpha();
 
 		//Track the motion of the head
 		double           ftiming = ovr_GetPredictedDisplayTime(hmd, 0);
@@ -323,7 +473,7 @@ void AVROculus::runLoop(){
 
 		//Calculate the positions of the eyes
 		ovr_CalcEyePoses(tracking.HeadPose.ThePose, offset, eyePoses);
-		ld.SensorSampleTime = sensorSampleTime;
+		ld.SensorSampleTime = currentTime;
 
 		renderEye(ovrEye_Right);
 		renderEye(ovrEye_Left);
